@@ -38,8 +38,8 @@ genius = Genius(
     remove_section_headers=True,   # removes [Chorus], [Verse] etc.
 )
 
-artist = "Charli XCX"
-song_name = "365"
+artist = "A. G. Cook, Charli xcx"
+song_name = "Xcxoplex (with Charli XCX)"
 song = genius.search_song(song_name, artist)
 
 print(clean_lyrics(song.lyrics))

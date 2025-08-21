@@ -32,7 +32,7 @@ app.get('/', (req, res) => {
 
 app.get('/login', (req, res) => {
     const state = generateRandomString(16);
-    const scope = 'user-read-private user-read-email';
+    const scope = 'user-library-read';
 
     res.redirect('https://accounts.spotify.com/authorize?' +
         querystring.stringify({
@@ -81,7 +81,52 @@ app.get('/callback', async (req, res) => {
     }
 });
 
+app.post("/get-liked-songs", async (req, res) => {
+    try {
+        const { accessToken } = req.body;
 
+        async function fetchAllLikedSongs(url = "https://api.spotify.com/v1/me/tracks?limit=50") {
+            const result = await fetch(url, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+
+            const data = await result.json();
+
+            // Start with current batch of songs
+            let allSongs = [...data.items];
+
+            // If there's a next page, recursively fetch it
+            if (data.next) {
+                console.log(`Fetching next page: ${data.next}`);
+                const nextPageSongs = await fetchAllLikedSongs(data.next);
+                allSongs = [...allSongs, ...nextPageSongs];
+            }
+
+            return allSongs;
+        }
+
+        console.log("Starting to fetch all liked songs...");
+        const spotifySongs = await fetchAllLikedSongs();
+        console.log(`Fetched ${spotifySongs.length} songs from Spotify`);
+
+        const formattedOutput = [];
+        spotifySongs.forEach(song => {
+            const formatted = {
+                name: song.track.name,
+                artist: song.track.artists.map(a => a.name).join(", ")
+            };
+            formattedOutput.push(formatted);
+        });
+
+
+        res.json(formattedOutput);
+
+    } catch (error) {
+        console.error("Error fetching and enhancing liked songs:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // Start server
 app.listen(PORT, () => {
