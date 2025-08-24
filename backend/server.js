@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const querystring = require('querystring');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -91,6 +92,18 @@ app.post("/get-liked-songs", async (req, res) => {
                 headers: { Authorization: `Bearer ${accessToken}` }
             });
 
+            // const contentType = result.headers.get("content-type");
+
+            // if (!result.ok) {
+            //     const errorText = await result.text();
+            //     throw new Error(`Spotify API error: ${result.status} ${result.statusText} - ${errorText}`);
+            // }
+
+            // if (!contentType || !contentType.includes("application/json")) {
+            //     const text = await result.text();
+            //     throw new Error(`Unexpected response (not JSON): ${text}`);
+            // }
+
             const data = await result.json();
 
             // Start with current batch of songs
@@ -102,6 +115,7 @@ app.post("/get-liked-songs", async (req, res) => {
                 const nextPageSongs = await fetchAllLikedSongs(data.next);
                 allSongs = [...allSongs, ...nextPageSongs];
             }
+
 
             return allSongs;
         }
@@ -119,6 +133,15 @@ app.post("/get-liked-songs", async (req, res) => {
             formattedOutput.push(formatted);
         });
 
+        const filePath = "liked_songs.json";
+
+        try {
+            // Save the whole array as JSON
+            fs.writeFileSync(filePath, JSON.stringify(formattedOutput, null, 2));
+            console.log("JSON saved to", filePath);
+        } catch (err) {
+            console.error("Error saving file synchronously:", err);
+        }
 
         res.json(formattedOutput);
 
