@@ -2,17 +2,17 @@ from lyricsgenius import Genius
 from dotenv import load_dotenv
 import os
 import json
+import time
 
 load_dotenv()
 
-
-with open("liked_songs.json", "r",encoding="utf-8") as file:
+# Load liked songs JSON
+with open("liked_songs.json", "r", encoding="utf-8") as file:
     data = json.load(file)
 
-# print(data)
-
-# Get an environment variable
+# Genius API token
 token = os.getenv("GENIUS_ACCESS_TOKEN")
+
 def clean_lyrics(raw_lyrics: str) -> str:
     """
     Removes Genius extra text (contributors, translations, descriptions)
@@ -20,50 +20,56 @@ def clean_lyrics(raw_lyrics: str) -> str:
     """
     lines = raw_lyrics.splitlines()
     cleaned_lines = []
-
     start = False
     for line in lines:
-        # Skip empty lines & unwanted headers
         if not start:
-            # First real lyric starts after the line containing "Lyrics"
             if "Lyrics" in line:
                 start = True
             continue
-
-        # Skip section headers like [Chorus], [Verse] if you want
         if line.strip().startswith("[") and line.strip().endswith("]"):
             continue
-
         cleaned_lines.append(line)
-
     return "\n".join(cleaned_lines).strip()
 
-# genius = Genius(token)
+# Genius client
 genius = Genius(
     token,
-    timeout=15,
-    remove_section_headers=True,   # removes [Chorus], [Verse] etc.
+    timeout=60,                  # increase timeout
+    remove_section_headers=True, # auto remove [Chorus], [Verse]
+    retries=3                    # retry failed requests
 )
 
-for liked_song in data:
+# Make sure output folder exists
+os.makedirs("lyrics", exist_ok=True)
+
+for idx, liked_song in enumerate(data, start=1):
     song_name = liked_song["name"]
     artist = liked_song["artist"]
 
-    # sanitize filename
+    # Sanitize filename
     safe_artist = "".join(c for c in artist if c.isalnum() or c in " _-").strip()
     safe_song = "".join(c for c in song_name if c.isalnum() or c in " _-").strip()
     file_name = f"{safe_artist}_{safe_song}.txt"
+    file_path = os.path.join("lyrics", file_name)
 
-    song = genius.search_song(song_name, artist)
+    # Skip if already saved
+    if os.path.exists(file_path):
+        print(f"⏩ Skipping {song_name} by {artist} (already saved)")
+        continue
 
-    if song:  # avoid crash if None
-        os.makedirs("lyrics", exist_ok=True)  # make sure folder exists
-        with open(f"lyrics/{file_name}", "w", encoding="utf-8") as file:
-            file.write(clean_lyrics(song.lyrics))
-        print(f"Saved lyrics for {song_name} by {artist}")
-    else:
-        print(f"❌ Lyrics not found for {song_name} by {artist}")
+    try:
+        print(f"[{idx}/{len(data)}] Searching for {song_name} by {artist}...")
+        song = genius.search_song(song_name, artist)
 
+        if song:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(clean_lyrics(song.lyrics))
+            print(f"✅ Saved lyrics for {song_name} by {artist}")
+        else:
+            print(f"❌ Lyrics not found for {song_name} by {artist}")
 
+    except Exception as e:
+        print(f"⚠️ Error with {song_name} by {artist}: {e}")
 
-# print(clean_lyrics(song.lyrics))
+    # Delay to avoid rate-limiting
+    time.sleep(1)

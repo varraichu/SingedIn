@@ -138,6 +138,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-.backend/lyrics/
+backend/lyrics/
 
 liked_songs.json
