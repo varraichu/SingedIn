@@ -126,14 +126,17 @@ app.post("/get-liked-songs", async (req, res) => {
 
         const formattedOutput = [];
         spotifySongs.forEach(song => {
+            // console.log(song.track.album.images[0].url)
             const formatted = {
                 name: song.track.name,
-                artist: song.track.artists.map(a => a.name).join(", ")
+                // artist: song.track.artists.map(a => a.name).join(", ")
+                artist: song.track.artists[0].name,
+                album_art: song.track.album.images[0].url
             };
             formattedOutput.push(formatted);
         });
 
-        const filePath = "liked_songs.json";
+        const filePath = "liked_songs2.json";
 
         try {
             // Save the whole array as JSON

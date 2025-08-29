@@ -7,7 +7,7 @@ import time
 load_dotenv()
 
 # Load liked songs JSON
-with open("liked_songs.json", "r", encoding="utf-8") as file:
+with open("liked_songs2.json", "r", encoding="utf-8") as file:
     data = json.load(file)
 
 # Genius API token
@@ -34,10 +34,12 @@ def clean_lyrics(raw_lyrics: str) -> str:
 # Genius client
 genius = Genius(
     token,
-    timeout=60,                  # increase timeout
-    remove_section_headers=True, # auto remove [Chorus], [Verse]
-    retries=3                    # retry failed requests
+    timeout=60,                 
+    remove_section_headers=True,
+    retries=3    
 )
+
+data2 = []
 
 # Make sure output folder exists
 os.makedirs("lyrics", exist_ok=True)
@@ -66,6 +68,7 @@ for idx, liked_song in enumerate(data, start=1):
                 f.write(clean_lyrics(song.lyrics))
             print(f"✅ Saved lyrics for {song_name} by {artist}")
         else:
+            data2.append(liked_song)
             print(f"❌ Lyrics not found for {song_name} by {artist}")
 
     except Exception as e:
@@ -74,9 +77,12 @@ for idx, liked_song in enumerate(data, start=1):
     # Delay to avoid rate-limiting
     time.sleep(1)
 
+with open("missing_lyrics.json", "w", encoding="utf-8") as new_file:
+    json.dump(data2, new_file, ensure_ascii=False, indent=4)
+
 
 # song_name = "Life is good"
-# artist = "Drake"
+# artist = "Future"
 
 #     # Sanitize filename
 # safe_artist = "".join(c for c in artist if c.isalnum() or c in " _-").strip()

@@ -144,3 +144,4 @@ backend/.venv
 backend/chroma_db
 
 liked_songs.json
+liked_songs2.json
