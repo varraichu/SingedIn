@@ -7,7 +7,9 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from langchain.chains import LLMChain
+from langchain.retrievers.multi_query import MultiQueryRetriever
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
 
 from dotenv import load_dotenv
 
@@ -47,11 +49,36 @@ vector_db = Chroma(
 vector_store = vector_db.from_documents(chunks, OpenAIEmbeddings(model='text-embedding-3-small'))
 
 # print(vector_store.get(include=["embeddings", "metadatas"]))  
+llm = ChatOpenAI(
+    model="gpt-4o-mini",  # or "gpt-4o", depending on budget
+    temperature=0.7
+)
 
+#plain retriever
 retriever = vector_store.as_retriever(   
     search_type='mmr',
     search_kwargs={"k": 3}
 )
+
+#multi-query retriever
+multi_query_retriever = MultiQueryRetriever.from_llm(
+
+    retriever=vector_store.as_retriever(), llm=llm
+
+)
+
+
+#compression retriever
+compressor = LLMChainExtractor.from_llm(llm)
+
+compression_retriever = ContextualCompressionRetriever(
+
+    base_compressor=compressor, base_retriever=retriever
+
+)
+
+
+
 
 sentence_splitter = RecursiveCharacterTextSplitter(
     chunk_size=100,
@@ -73,7 +100,12 @@ for i, chunk in enumerate(sentence_chunks):
     print(f"Processing chunk {i+1}/{len(sentence_chunks)}")
         
     # Retrieve similar lyrics for this chunk
-    similar_lyrics = retriever.invoke(chunk)
+    
+    # similar_lyrics = retriever.invoke(chunk)
+
+    # similar_lyrics = multi_query_retriever.invoke(chunk)
+
+    similar_lyrics = compression_retriever.invoke(chunk)
         
     chunk_result = {
         "chunk_index": i,
@@ -94,10 +126,7 @@ for i, chunk in enumerate(sentence_chunks):
 
 # print(results)
 
-llm = ChatOpenAI(
-    model="gpt-4o-mini",  # or "gpt-4o", depending on budget
-    temperature=0.7
-)
+
 
 prompt = ChatPromptTemplate.from_template("""
 You are rewriting a paragraph in a playful remix style.
@@ -113,29 +142,40 @@ Instructions:
 - If none fit, return the original sentence unchanged.
 - Keep the overall tone consistent with the paragraph (storytelling, reflective, LinkedIn style).
 - Do not add extra lyrics beyond the candidates.
+- Change the grammar of the lyric to match the tense of the original sentence.
 """)
 
-chain = LLMChain(
-    llm=llm,
-    prompt=prompt
-)
+chain = prompt | llm
 
 final_sentences = []
 
 for chunk_result in results:
     sentence = chunk_result["original_chunk"]
     lyrics = [l["content"] for l in chunk_result["retrieved_lyrics"]]
-    
     # Join top lyrics into one string
     lyrics_text = "\n".join(f"- {lyric}" for lyric in lyrics)
     
+    # lyrics = []
+    # for l in chunk_result["retrieved_lyrics"]:
+    #     content = l["content"]
+    #     metadata = l["metadata"]
+    #     # you can pick which metadata fields you care about
+    #     # e.g. filename or artist
+    #     source = metadata.get("source", "unknown")
+    
+    #     lyrics.append(f"- \"{content}\" (from: {source})")
+
+    # lyrics_text = "\n".join(lyrics)
+
+    
+    
     # Run LLM chain
-    response = chain.run({
+    response = chain.invoke({
         "sentence": sentence,
         "lyrics": lyrics_text
     })
     
-    final_sentences.append(response.strip())
+    final_sentences.append(response.content.strip())
 
 final_paragraph = " ".join(final_sentences)
 print(final_paragraph)
