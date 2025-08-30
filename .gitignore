@@ -145,3 +145,4 @@ backend/chroma_db
 
 liked_songs.json
 liked_songs2.json
+missing_lyrics.json
