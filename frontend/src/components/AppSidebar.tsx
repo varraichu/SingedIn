@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 interface UserData {
     country: string;
     display_name: string;
+    email: string;
     followers: {
         href: string | null;
         total: number;
@@ -76,6 +77,7 @@ export function AppSidebar() {
             const data: UserData = {
                 country: res_data.country,
                 display_name: res_data.display_name,
+                email: res_data.email,
                 followers: res_data.followers,
                 image_url: res_data.images[0]?.url || '',
                 product: res_data.product,
@@ -121,6 +123,7 @@ export function AppSidebar() {
                                     <AvatarFallback>CN</AvatarFallback>
                                 </Avatar>
                                 <p>{userData.display_name}</p>
+                                <p>{userData.email}</p>
                             </div>
                             :
                             <Avatar>

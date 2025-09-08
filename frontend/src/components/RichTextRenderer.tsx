@@ -13,6 +13,11 @@ import {
     PromptInputToolbar,
 } from '@/components/ai-elements/prompt-input';
 
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from "@/components/ui/hover-card"
 
 const fac = new FastAverageColor();
 
@@ -104,7 +109,12 @@ export default function RichTextRenderer({ text }: { text: string }) {
                         className="w-8 h-8 object-cover rounded-sm border transform rotate-[-17deg]"
                     />
                 )}
-                {lyric}
+                <HoverCard>
+                    <HoverCardTrigger>{lyric}</HoverCardTrigger>
+                    <HoverCardContent>
+                        {song && song.name}
+                    </HoverCardContent>
+                </HoverCard>
             </span>
         );
         lastIndex = regex.lastIndex;
@@ -122,8 +132,8 @@ export default function RichTextRenderer({ text }: { text: string }) {
                 <p>{parts}</p>
             </div>
             <div className="grid w-full gap-2">
-                <Textarea placeholder="Type your message here."  
-                className=""/>
+                <Textarea placeholder="Type your message here."
+                    className="" />
             </div>
         </div>
     )
