@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
 
 app.get('/login', (req, res) => {
     const state = generateRandomString(16);
-    const scope = 'user-library-read';
+    const scope = 'user-library-read user-read-private user-read-email';
 
     res.redirect('https://accounts.spotify.com/authorize?' +
         querystring.stringify({
@@ -151,6 +151,23 @@ app.post("/get-liked-songs", async (req, res) => {
     } catch (error) {
         console.error("Error fetching and enhancing liked songs:", error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+app.post("/get-userData", async (req, res) => {
+    try {
+        const { accessToken } = req.body;
+
+        const result = await fetch("https://api.spotify.com/v1/me", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+        const userData = await result.json();
+        res.json(userData);
+
+    } catch (error) {
+        console.log(error)
     }
 });
 

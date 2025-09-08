@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useEffect } from "react";
 
-const App = () => {
+const ConnectSpotify = () => {
   const [loggedin, setLoggedIn] = useState(false);
   // const [token, setToken] = useState(null);
   const [songs, setSongs] = useState([]);
@@ -62,4 +62,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default ConnectSpotify;
