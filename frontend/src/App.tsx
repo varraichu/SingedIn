@@ -1,6 +1,5 @@
 import RichTextRenderer from "@/components/RichTextRenderer";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/AppSidebar"
+import LandingPage from "./components/LandingPage";
 
 const sampleText = `
 I was *working on the weekend* (yes, and?) like usual, grinding away at my desk while everyone else seemed to be out enjoying the sun. Deadlines stacked up, and I kept reminding myself *started from the bottom now we here* (positions), but it didn't feel like I'd reached anywhere yet. Coffee cups piled high, and still *I can't feel my face when I'm with you* (Crash) echoed through my headphones, giving me just enough energy to keep pushing through.
@@ -18,11 +17,8 @@ Finally, as the clock struck midnight, I leaned back and laughed — *it's a har
 
 export default function App() {
   return (
-    <div className="bg-background">
-      <SidebarProvider>
-        <AppSidebar />
-          <RichTextRenderer text={sampleText} />
-      </SidebarProvider>
+    <div className="bg-background"> 
+    <LandingPage></LandingPage>
     </div>
   );
 }

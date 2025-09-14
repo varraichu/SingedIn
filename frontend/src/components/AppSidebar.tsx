@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useEffect, useState } from "react";
+import StickerPeel from './StickerPeel'
 
 interface UserData {
     country: string;
@@ -89,49 +90,63 @@ export function AppSidebar() {
         }
     }
     return (
-        <Sidebar side="left" variant="floating" >
-            <SidebarHeader>
-                <p>Sortify</p>
-            </SidebarHeader>
-            <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel></SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {!loggedin ? (
-                                <Button onClick={login}>
-                                    Connect Spotify
-                                </Button>
-                            ) : (
+        <div className="max-h-screen">
+            <Sidebar side="left" variant="floating" >
+                <SidebarHeader className="prose">
+                    <h1>SingedIn</h1>
+                </SidebarHeader>
+                <SidebarContent>
+                    <SidebarGroup>
+                        <SidebarGroupLabel></SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {!loggedin ? (
+                                    <Button onClick={login} className="prose">
+                                        Connect Spotify
+                                    </Button>
+                                ) : (
+                                    <div className="prose">
+                                        <p>Connected to Spotify</p>
+                                        <p>{songs.length} liked songs</p>
+                                        <p>{userData?.followers.total} followers</p>
+                                        <div className="bg-red-400">
+                                            <StickerPeel
+                                            imageSrc={"https://i.scdn.co/image/ab67616d0000b27385ff52b3a1e03d96c915531e"}
+                                            width={50}
+                                            rotate={20}
+                                            peelBackHoverPct={20}
+                                            peelBackActivePct={10}
+                                            shadowIntensity={0.1}
+                                            lightingIntensity={0.1}
+                                            // initialPosition={{ x: 100, y: 100 }}
+                                        />
+                                        </div>
+                                    </div>
+                                )}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                </SidebarContent>
+                <SidebarFooter>
+                    <div>
+                        {
+                            userData ?
                                 <div>
-                                    <p>Connected to Spotify</p>
-                                    <p>{songs.length} liked songs</p>
-                                    <p>{userData?.followers.total} followers</p>
+                                    <Avatar>
+                                        <AvatarImage src={userData.image_url} />
+                                        <AvatarFallback>CN</AvatarFallback>
+                                    </Avatar>
+                                    <p>{userData.display_name}</p>
+                                    <p>{userData.email}</p>
                                 </div>
-                            )}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
-            </SidebarContent>
-            <SidebarFooter>
-                <div>
-                    {
-                        userData ?
-                            <div>
+                                :
                                 <Avatar>
-                                    <AvatarImage src={userData.image_url} />
-                                    <AvatarFallback>CN</AvatarFallback>
+                                    <AvatarFallback>PK</AvatarFallback>
                                 </Avatar>
-                                <p>{userData.display_name}</p>
-                                <p>{userData.email}</p>
-                            </div>
-                            :
-                            <Avatar>
-                                <AvatarFallback>PK</AvatarFallback>
-                            </Avatar>
-                    }
-                </div>
-            </SidebarFooter>
-        </Sidebar>
+                        }
+                    </div>
+                </SidebarFooter>
+            </Sidebar>
+        </div>
     )
 }

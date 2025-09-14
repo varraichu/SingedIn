@@ -79,6 +79,25 @@ export default function RichTextRenderer({ text }: { text: string }) {
         }
     }
 
+    const renderPlainTextWords = (text: string, startKey: string) => {
+        return text.split(/(\s+)/).map((part, index) => {
+            if (part.match(/^\s+$/)) {
+                return part;
+            } else if (part.trim()) {
+                return (
+                    <span
+                        key={`${startKey}-${index}`}
+                        className="inline-flex items-center rounded text-black font-semibold"
+                    >
+                        <div className="h-8 opacity-0" />
+                        {part}
+                    </span>
+                );
+            }
+            return part;
+        });
+    };
+
     // 3. Render text with highlights
     const parts: (string | React.ReactNode)[] = [];
     const regex = /\*(.*?)\*\s*\((.*?)\)/g;
@@ -88,15 +107,15 @@ export default function RichTextRenderer({ text }: { text: string }) {
     while ((match = regex.exec(text)) !== null) {
         const [full, lyric, songName] = match;
         if (match.index > lastIndex) {
-            parts.push(text.slice(lastIndex, match.index));
+            const plainText = text.slice(lastIndex, match.index);
+            parts.push(...renderPlainTextWords(plainText, `plain-${lastIndex}`));
         }
-        const color = colors[songName] || "#fef3c7"; // fallback
+        const color = colors[songName] || "#ffffff"; // fallback
         const song = songs.find((s) => s.name === songName);
-
         parts.push(
             <span
                 key={match.index}
-                className="inline-flex items-center gap-1 rounded px-1 text-white font-semibold"
+                className="inline-flex items-center gap-1 rounded px-1 text-white font-bold"
                 style={{
                     backgroundColor: color,
                     color: getBeautifulContrast(color)
@@ -110,7 +129,11 @@ export default function RichTextRenderer({ text }: { text: string }) {
                     />
                 )}
                 <HoverCard>
-                    <HoverCardTrigger>{lyric}</HoverCardTrigger>
+                    <HoverCardTrigger>
+                        <TextEffect per='char' preset='fade' speedReveal={0.5} speedSegment={0.3}>
+                            {lyric}
+                        </TextEffect>
+                    </HoverCardTrigger>
                     <HoverCardContent>
                         {song && song.name}
                     </HoverCardContent>
@@ -122,18 +145,52 @@ export default function RichTextRenderer({ text }: { text: string }) {
 
 
     if (lastIndex < text.length) {
-        parts.push(text.slice(lastIndex));
+        const remainingText = text.slice(lastIndex);
+        parts.push(...renderPlainTextWords(remainingText, "remaining"));
     }
 
     return (
+        <div className="p-2 h-screen">
+            <div className="relative flex flex-col w-full h-full justify-between p-2">
+                <div className=" overflow-y-auto flex-1 pb-32">
+                    <p>{parts}</p>
+                </div>
 
-        <div className="flex flex-col w-full justify-between p-2 m-2 border rounded-md">
-            <div className="prose">
-                <p>{parts}</p>
-            </div>
-            <div className="grid w-full gap-2">
-                <Textarea placeholder="Type your message here."
-                    className="" />
+                {/* <div className="absolute bottom-4 left-4 right-4 z-10">
+                    <Textarea
+                        placeholder="Type your message here."
+                        className="w-1/2
+                         bg-white/20 
+                         backdrop-blur-sm 
+                         border border-white rounded-2xl 
+                         shadow-xl 
+                         placeholder:text-gray-600
+                         text-gray-800"
+                         />
+                         </div> */}
+
+                <div className="absolute bottom-4 left-4 right-4 z-10 flex justify-center">
+                    <PromptInput
+                        onSubmit={() => { }}
+                        className="w-1/2
+         bg-white/20 
+         backdrop-blur-sm
+         border border-white rounded-2xl 
+         shadow-xl 
+         placeholder:text-gray-600
+         text-gray-800"
+                    >
+                        <PromptInputTextarea
+                            onChange={(e) => { }}
+                            placeholder="Ask me anything..."
+                        />
+                        <PromptInputSubmit
+                            className="absolute right-1 top-1/2 -translate-y-1/2"
+                            disabled={false}
+                            status={'ready'}
+                        />
+                    </PromptInput>
+                </div>
             </div>
         </div>
     )

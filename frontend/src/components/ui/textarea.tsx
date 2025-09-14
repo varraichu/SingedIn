@@ -15,24 +15,23 @@ const Textarea = React.forwardRef<
   };
 
   return (
-    <div className="relative">
-
+    <div className="relative flex justify-center">
       <textarea
         className={cn(
-          "flex min-h-[60px] max-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm ",
+          "flex min-h-[60px] max-h-[100px] w-full rounded-md border border-input bg-white px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm  ",
           className
         )}
         ref={ref}
         {...props}
         onInput={handleInput}
       />
-      <Button
+      {/* <Button
          size="icon"
-        className="absolute size-8 bottom-2 right-2 px-3 rounded-full"
+        className="absolute size-8 top-1/2 -translate-y-1/2 translate-x-72 rounded-full"
       >
-        <SendHorizontal /></Button>
+        <SendHorizontal /></Button> */}
     </div>
-  )
+)
 })
 Textarea.displayName = "Textarea"
 
