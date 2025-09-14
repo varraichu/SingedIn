@@ -70,13 +70,13 @@
     }
 
     .gradient-background2 {
-  background:
-    radial-gradient(ellipse 85% 65% at 8% 8%, oklch(0.35 0.08 290 / 0.45), transparent 60%),
-    radial-gradient(ellipse 75% 60% at 75% 35%, oklch(0.42 0.06 85 / 0.35), transparent 62%),
-    radial-gradient(ellipse 70% 60% at 15% 80%, oklch(0.38 0.10 340 / 0.40), transparent 62%),
-    radial-gradient(ellipse 70% 60% at 92% 92%, oklch(0.40 0.07 240 / 0.38), transparent 62%),
-    linear-gradient(180deg, oklch(0.25 0.02 310), oklch(0.22 0.03 350));
-}
+      background:
+        radial-gradient(ellipse 85% 65% at 8% 8%, oklch(0.35 0.08 290 / 0.45), transparent 60%),
+        radial-gradient(ellipse 75% 60% at 75% 35%, oklch(0.42 0.06 85 / 0.35), transparent 62%),
+        radial-gradient(ellipse 70% 60% at 15% 80%, oklch(0.38 0.10 340 / 0.40), transparent 62%),
+        radial-gradient(ellipse 70% 60% at 92% 92%, oklch(0.40 0.07 240 / 0.38), transparent 62%),
+        linear-gradient(180deg, oklch(0.25 0.02 310), oklch(0.22 0.03 350));
+    }
 
     .soft-blue-radial {
       background: #ffffff;
@@ -214,26 +214,14 @@
     @apply border-border;
   }
 
-  /* html,
-  body {
-    height: 100vh;
-    margin: 0;
-    padding: 0;
-  }
-
+  html,
+  body,
   #root {
-    height: 100vh;
     margin: 0;
     padding: 0;
+    height: 100vh; /* Use vh instead of % */
+    overflow: hidden; /* Prevent body scroll */
   }
-
-  * {
-    outline: 1px solid red !important;
-  }
-
-  body * {
-    background: rgba(255, 0, 0, 0.1) !important;
-  } */
 
   body {
     @apply bg-background text-foreground;
