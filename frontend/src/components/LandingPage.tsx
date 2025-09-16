@@ -13,7 +13,7 @@ const LandingPage = () => {
                     <h1>Hello, lets SING! </h1>
                     {/* <span><MicVocal /></span> */}
                 </div>
-                <div className='sm:w-7/12 '>
+                <div className='sm:w-7/12'>
                     <PromptInputBox showSuggestions={true} />
                 </div>
             </div>

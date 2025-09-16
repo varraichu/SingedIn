@@ -13,16 +13,23 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-// Navigation links array to be used in both desktop and mobile menus
 const navigationLinks = [
-  { href: "#", label: "Chat", active: true },
-  { href: "#", label: "About" },
+  { href: "chat", label: "Chat", active: true},
+  { href: "about", label: "About", active: false },
 ]
 
 export default function NavBar() {
+  let url = location.href;
+  
+  if(url.match(/\babout\b/g)) {
+    navigationLinks[1].active = true
+    navigationLinks[0].active = false
+  }
+
+
   return (
     <header className="border-b px-4 md:px-6">
-      <div className="flex h-16 items-center justify-between gap-4">
+      <div className="flex h-12 items-center justify-between gap-4">
         {/* Left side */}
         <div className="flex items-center gap-2">
           {/* Mobile menu trigger */}
@@ -80,9 +87,9 @@ export default function NavBar() {
           </Popover>
           {/* Main nav */}
           <div className="flex items-center gap-6">
-            <a href="#" className="text-primary hover:text-primary/90">
+            <div className="text-primary">
               <MicVocal />
-            </a>
+            </div>
             {/* Navigation menu */}
             <NavigationMenu className="max-md:hidden">
               <NavigationMenuList className="gap-2">
@@ -104,7 +111,7 @@ export default function NavBar() {
         {/* Right side */}
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm" className="text-sm">
-            <a href="#">Contact</a>
+            <a href="https://www.linkedin.com/in/qasim-anwar/" target="_blank">Show love</a>
           </Button>
           <Button asChild size="sm" className="text-sm">
             <a href="#">Connect Spotify</a>

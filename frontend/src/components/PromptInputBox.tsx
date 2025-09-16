@@ -21,8 +21,8 @@ import {
     PromptInputModelSelectTrigger,
     PromptInputModelSelectValue,
 } from '@/components/ai-elements/prompt-input';
-
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+import { useNavigate } from "react-router";
 
 const suggestions = [
     'Can you explain how to play tennis?',
@@ -39,9 +39,11 @@ type PromptInputBoxProps = {
 const PromptInputBox = ({ showSuggestions = false }: PromptInputBoxProps) => {
     const [model, setModel] = useState<string>(models[0].id);
     const [input, setInput] = useState('');
+    let navigate = useNavigate();
 
     const sendMessage = () => {
         console.log("input: ", input);
+        navigate("/chat/response");
     }
 
     const handleSuggestionClick = (suggestion: string) => {

@@ -13,7 +13,7 @@ const ChatResponse = () => {
         </div>
         
         <div className='flex flex-col items-center justify-center py-4 flex-shrink-0'>
-            <div className='w-7/12'>
+            <div className='w-4/5 md:w-7/12'>
                 <PromptInputBox />
             </div>
         </div>
