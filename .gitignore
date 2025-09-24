@@ -146,3 +146,8 @@ backend/chroma_db
 liked_songs.json
 liked_songs2.json
 missing_lyrics.json
+
+fast-backend/lyrics/
+fast-backend/.venv
+fast-backend/chroma_db
+fast-backend/__pycache__
