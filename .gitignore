@@ -150,4 +150,4 @@ missing_lyrics.json
 fast-backend/lyrics/
 fast-backend/.venv
 fast-backend/chroma_db
-fast-backend/__pycache__
+__pycache__/
