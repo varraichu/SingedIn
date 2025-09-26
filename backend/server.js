@@ -92,18 +92,6 @@ app.post("/get-liked-songs", async (req, res) => {
                 headers: { Authorization: `Bearer ${accessToken}` }
             });
 
-            // const contentType = result.headers.get("content-type");
-
-            // if (!result.ok) {
-            //     const errorText = await result.text();
-            //     throw new Error(`Spotify API error: ${result.status} ${result.statusText} - ${errorText}`);
-            // }
-
-            // if (!contentType || !contentType.includes("application/json")) {
-            //     const text = await result.text();
-            //     throw new Error(`Unexpected response (not JSON): ${text}`);
-            // }
-
             const data = await result.json();
 
             // Start with current batch of songs
@@ -115,8 +103,6 @@ app.post("/get-liked-songs", async (req, res) => {
                 const nextPageSongs = await fetchAllLikedSongs(data.next);
                 allSongs = [...allSongs, ...nextPageSongs];
             }
-
-
             return allSongs;
         }
 

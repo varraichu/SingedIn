@@ -1,25 +1,32 @@
-import os
+import os, json
 import base64
 import requests
 import httpx
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Cookie
 from fastapi.responses import RedirectResponse
 from urllib.parse import urlencode
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from helpers.spotify_helper import generateRandomString, token
+from helpers.spotify_helper import generateRandomString, token, fetchAllLikedSongs
 
 load_dotenv()
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 REDIRECT_URI = os.getenv('REDIRECT_URI')
+FRONTEND_URI = os.getenv('FRONTEND_URI')
 
 app = FastAPI()
 
 class Conversation(BaseModel):
     message: str
 
+class UserData():
+    username: str
+    email: str
+    profile: str
+    followers: int
+    avatar:str
 
 @app.get("/")
 async def root():
@@ -47,18 +54,26 @@ async def login():
     )
 
 @app.get("/callback")
-async def callback(code, state, response:Response, error=None):
+async def callback(code, state, error=None):
     print(f"code: {code}")
     print(f"state: {state}")
     if error:
         return RedirectResponse('/' + urlencode({"error": error }))
     
     try:
-      token_res = await token(code)
-      print("Spotify token response:", token_res)
-      response.set_cookie(key='access_token', value=token_res["access_token"])
-      response.set_cookie(key='refresh_token', value=token_res["refresh_token"], expires=token_res["expires_in"])
-      return {"message": "tokens retrieved"}
+        token_res = await token(code)
+        print("Spotify token response:", token_res)
+        redirect_response = RedirectResponse(url=FRONTEND_URI)
+        redirect_response.set_cookie(
+            key='access_token',
+            value=token_res["access_token"],
+            expires=token_res["expires_in"]
+        )
+        redirect_response.set_cookie(
+            key='refresh_token',
+            value=token_res["refresh_token"]
+        )
+        return redirect_response
     except Exception as e:
         print("Error in callback:", e)
         return {"error: ", str(e)}
@@ -82,11 +97,70 @@ async def refresh_token(refresh_token:str, response:Response):
             http_response = await client.post(url=url, data=body, headers=headers)
             data = http_response.json()
             
-            response.set_cookie(key='access_token', value=data["access_token"])
-            response.set_cookie(key='refresh_token', value=data["refresh_token"], expires=data["expires_in"])
+            response.set_cookie(key='access_token', value=data["access_token"], expires=data["expires_in"])
+            response.set_cookie(key='refresh_token', value=data["refresh_token"])
 
-            return {"message": "tokens retrieved"}
+            return {"message": "tokens refreshed"}
         
     except Exception as e:
         return {"error: ", str(e)}
 
+
+@app.get('/api/get_user_data')
+async def get_user_data(access_token:str = Cookie(None)):
+    if not access_token:
+        raise ValueError("No access token provided")
+    url = "https://api.spotify.com/v1/me"
+    headers = {
+        "Authorization" : "Bearer " + access_token
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            http_response = await client.get(url=url, headers=headers)
+            data = http_response.json()
+
+            userData = UserData()
+            userData.username = data["display_name"]
+            userData.email = data["email"]
+            userData.profile = data["href"]
+            userData.followers = data["followers"]["total"]
+            userData.avatar = data["images"][0]["url"]
+            print("user Data: ", userData);
+            return userData
+    except Exception as e:
+        return {"error: ", str(e)}
+
+
+@app.get('/api/get_liked_songs')
+async def get_all_liked_songs(access_token: str = Cookie(None)):
+    try:
+        spotifySongs = await fetchAllLikedSongs("https://api.spotify.com/v1/me/tracks?limit=50", access_token=access_token)
+        formattedSongs = []
+
+        for song in spotifySongs:
+            modifiedSong = {
+                "name" : song["track"]["name"],
+                "artist" : song["track"]["artists"][0]["name"],
+                "album_art" : song["track"]["album"]["images"][0]["url"],
+            }
+
+            formattedSongs.append(modifiedSong)
+        
+        print("Fetched all songs: ", len(formattedSongs))
+        
+        try:
+            folder_name = "files"
+            os.makedirs(folder_name, exist_ok=True)
+            file_path = os.path.join(folder_name, "liked_songs.json")
+
+            with open(file_path, "a", encoding="utf-8") as f:
+                json.dump(formattedSongs, f, ensure_ascii=False, indent=2)
+
+        except Exception as e:
+            return {"error: ", str(e)}
+
+        return {"message":"Songs fetched"}
+
+    except Exception as e:
+        return {"error: ", str(e)}
