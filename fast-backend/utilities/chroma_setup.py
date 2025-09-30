@@ -28,6 +28,7 @@ def initialiseChromaClient():
     except Exception as e:
         print("Deleting collection failed: ", e)
 
+    print("creating collection")
     collection = client.get_or_create_collection(name="lyrics-embeddings")
     print("Chroma db setup successfully")
 

@@ -14,19 +14,21 @@ from pydantic import BaseModel
 from utilities.lyrics import fetchLyricsForSongs
 from helpers.spotify_helper import generateRandomString, token, fetchAllLikedSongs
 from utilities.chroma_setup import initialiseChromaClient, addDataToVectorStore
+from utilities.chatbot import ChatBot
 
 load_dotenv()
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 REDIRECT_URI = os.getenv('REDIRECT_URI')
 FRONTEND_URI = os.getenv('FRONTEND_URI')
-vector_store = None
+# vector_store = None
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     print("Backend Starting")
     vector_store = initialiseChromaClient()
-    yield
+    print("vector store: ", vector_store)
+    yield {"vector_store": vector_store}
     print("Backend Shutting Down")
 
 
@@ -176,12 +178,17 @@ async def get_all_liked_songs(access_token: str = Cookie(None)):
         return {"error: ", str(e)}
 
 @app.get('/api/get_lyrics')
-async def getLyrics():
-    fetchLyricsForSongs()
+async def getLyrics(request: Request):
+    # fetchLyricsForSongs()
+    vector_store = request.state.vector_store
+    print("Vectoriana= ", vector_store)
     addDataToVectorStore(vector_store=vector_store)
     return {"message" : "lyrics fetched"}
 
 
 @app.post("/api/chat")
-async def chat(conversation:Conversation):
-    return {"Massage": conversation.message}
+async def chat(conversation:Conversation, request: Request):
+    vector_store = request.state.vector_store
+    ai_chatbot = ChatBot(vector_store=vector_store)
+    response = ai_chatbot.enhanceText(userMessage=conversation.message)
+    return {"Massage": response}
