@@ -138,16 +138,12 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-backend/lyrics/
-backend/non-english-lyrics/
-backend/.venv
-backend/chroma_db
-
 liked_songs.json
-liked_songs2.json
 missing_lyrics.json
 
 fast-backend/lyrics/
+fast-backend/non_english_lyrics/
+fast-backend/empty_lyrics/
 fast-backend/.venv
-fast-backend/chroma_db
+fast-backend/my_chroma_db
 __pycache__/

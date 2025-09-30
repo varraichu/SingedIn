@@ -3,20 +3,34 @@ import base64
 import requests
 import httpx
 
+from dotenv import load_dotenv
+from contextlib import asynccontextmanager
+from urllib.parse import urlencode
+
 from fastapi import FastAPI, Request, Response, Cookie
 from fastapi.responses import RedirectResponse
-from urllib.parse import urlencode
 from pydantic import BaseModel
-from dotenv import load_dotenv
+
+from utilities.lyrics import fetchLyricsForSongs
 from helpers.spotify_helper import generateRandomString, token, fetchAllLikedSongs
+from utilities.chroma_setup import initialiseChromaClient, addDataToVectorStore
 
 load_dotenv()
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 REDIRECT_URI = os.getenv('REDIRECT_URI')
 FRONTEND_URI = os.getenv('FRONTEND_URI')
+vector_store = None
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app:FastAPI):
+    print("Backend Starting")
+    vector_store = initialiseChromaClient()
+    yield
+    print("Backend Shutting Down")
+
+
+app = FastAPI(lifespan=lifespan)
 
 class Conversation(BaseModel):
     message: str
@@ -31,10 +45,6 @@ class UserData():
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-@app.post("/api/chat")
-async def chat(conversation:Conversation):
-    return {"Massage": conversation.message}
 
 @app.get("/api/login")
 async def login():
@@ -164,3 +174,14 @@ async def get_all_liked_songs(access_token: str = Cookie(None)):
 
     except Exception as e:
         return {"error: ", str(e)}
+
+@app.get('/api/get_lyrics')
+async def getLyrics():
+    fetchLyricsForSongs()
+    addDataToVectorStore(vector_store=vector_store)
+    return {"message" : "lyrics fetched"}
+
+
+@app.post("/api/chat")
+async def chat(conversation:Conversation):
+    return {"Massage": conversation.message}
