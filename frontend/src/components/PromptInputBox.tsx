@@ -23,6 +23,8 @@ import {
 } from '@/components/ai-elements/prompt-input';
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 import { useNavigate } from "react-router";
+import useChatStore from '@/store/chatStore';
+import { json } from 'stream/consumers';
 
 const suggestions = [
     'Can you explain how to play tennis?',
@@ -39,11 +41,36 @@ type PromptInputBoxProps = {
 const PromptInputBox = ({ showSuggestions = false }: PromptInputBoxProps) => {
     const [model, setModel] = useState<string>(models[0].id);
     const [input, setInput] = useState('');
+    const addChatMessage = useChatStore((state) => state.addMessage);
+
     let navigate = useNavigate();
 
-    const sendMessage = () => {
+    const sendMessage = async () => {
         console.log("input: ", input);
+        addChatMessage("user", input)
+        
+        addChatMessage("bot", "")
+        
         navigate("/chat/response");
+
+        try {
+            const url = 'http://127.0.0.1:8000/api/chat'
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ message: input })
+            })
+            setInput('')    
+            const botResponse = await response.json()
+            console.log("botReponse: ", botResponse)
+            // addChatMessage("bot", botResponse.Massage)
+            useChatStore.getState().updateLastBotMessage(botResponse.message);
+        }
+        catch (error) {
+            console.log("an error occured when sending a message: ", error)
+        }
     }
 
     const handleSuggestionClick = (suggestion: string) => {
@@ -51,7 +78,7 @@ const PromptInputBox = ({ showSuggestions = false }: PromptInputBoxProps) => {
     };
 
     return (
-       <div className='flex flex-col items-center gap-5'>
+        <div className='flex flex-col items-center gap-5'>
             <div className='w-full'>
                 <PromptInput onSubmit={sendMessage} className="relative">
                     <PromptInputBody>

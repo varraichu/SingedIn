@@ -1,5 +1,4 @@
-// import Logo from "@/components/navbar-components/logo"
-import { MicVocal } from 'lucide-react';
+import { MicVocal, User } from 'lucide-react';
 import { Button } from "@/components/ui/button"
 import {
   NavigationMenu,
@@ -12,20 +11,94 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { useEffect, useState } from 'react';
 
 const navigationLinks = [
-  { href: "chat", label: "Chat", active: true},
-  { href: "about", label: "About", active: false },
+  { href: "/", label: "Chat", active: true },
+  // { href: "about", label: "About", active: false },
 ]
+
+interface User {
+  avatar: string
+  email: string
+  followers: number
+  profile: string
+  username: string
+}
 
 export default function NavBar() {
   let url = location.href;
-  
-  if(url.match(/\babout\b/g)) {
-    navigationLinks[1].active = true
-    navigationLinks[0].active = false
+
+  const [loggedIn, setLoggedIn] = useState(false)
+  const [userData, setUserData] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // if (url.match(/\babout\b/g)) {
+  //   navigationLinks[1].active = true
+  //   navigationLinks[0].active = false
+  // }
+
+
+  useEffect(() => {
+    checkAuthStatus()
+  }, [])
+
+
+  useEffect(() => {
+    if (loggedIn && !userData) {
+      fetchUserData()
+    }
+  }, [loggedIn])
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/get_user_data', {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const result = await response.json()
+        console.log("User data: ", result)
+        setUserData(result as User)
+        setLoggedIn(true)
+      } else {
+        setLoggedIn(false)
+        setUserData(null)
+      }
+    } catch (error) {
+      console.log("Auth check error: ", error)
+      setLoggedIn(false)
+      setUserData(null)
+    } finally {
+      setLoading(false)
+    }
   }
 
+  const fetchUserData = async () => {
+    const url = 'http://127.0.0.1:8000/api/get_user_data'
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`Response Status: ${response.status}`)
+      }
+      const result = await response.json()
+      console.log("User data: ", result)
+      setUserData(result)
+    }
+    catch (error) {
+      console.log("Fetching user data error: ", error)
+    }
+  }
+
+  const handleLogin = () => {
+    window.location.href = "http://127.0.0.1:8000/api/login"
+  }
+
+  const handleUserDataClick = () => {
+    // if (userData) {
+    //   console.log("Current user data:", userData)
+    //   alert(JSON.stringify(userData, null, 2))
+    // }
+  }
 
   return (
     <header className="border-b px-4 md:px-6">
@@ -113,8 +186,13 @@ export default function NavBar() {
           <Button asChild variant="ghost" size="sm" className="text-sm">
             <a href="https://www.linkedin.com/in/qasim-anwar/" target="_blank">Show love</a>
           </Button>
-          <Button asChild size="sm" className="text-sm">
-            <a href="#">Connect Spotify</a>
+          <Button
+            size="sm"
+            className="text-sm"
+            onClick={loggedIn ? handleUserDataClick : handleLogin}
+            disabled={loading}
+          >
+            {loading ? "Loading..." : loggedIn ? userData?.username : "Connect Spotify"}
           </Button>
         </div>
       </div>

@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 
 from fastapi import FastAPI, Request, Response, Cookie
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from utilities.lyrics import fetchLyricsForSongs
@@ -33,6 +34,19 @@ async def lifespan(app:FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",  # sometimes Vite uses this
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,        # or ["*"] for all origins
+    allow_credentials=True,
+    allow_methods=["*"],          # allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],          # allow all headers
+)
 
 class Conversation(BaseModel):
     message: str
@@ -191,4 +205,4 @@ async def chat(conversation:Conversation, request: Request):
     vector_store = request.state.vector_store
     ai_chatbot = ChatBot(vector_store=vector_store)
     response = ai_chatbot.enhanceText(userMessage=conversation.message)
-    return {"Massage": response}
+    return {"message": response}
