@@ -14,7 +14,7 @@ import {
 import useChatStore from '@/store/chatStore';
 
 const fac = new FastAverageColor();
-// const FormattedMessage = ({ text }: { text: string }) => {
+
 const FormattedMessage = () => {
     const [colors, setColors] = useState<Record<string, string>>({});
 
@@ -27,27 +27,28 @@ const FormattedMessage = () => {
         .findIndex((m: any) => m.role === 'bot');
 
     const lastBotMessage = lastBotIndex === -1 ? undefined : messages[messages.length - 1 - lastBotIndex];
-    const text = lastBotMessage?.message ??'';
+    const messageData = lastBotMessage?.message;
 
     useEffect(() => {
+        console.log("bot message: ", messageData)
         async function loadColors() {
             const newColors: Record<string, string> = {};
-            if (!text) {
-                // nothing to parse yet
+            
+            // Check if messageData is an array
+            if (!Array.isArray(messageData) || messageData.length === 0) {
                 setColors({});
                 return;
             }
 
-            // 1. Extract song names from the text
-            const regex = /\*(.*?)\*\s*\((.*?)\)/g;
+            // Extract unique song names from the array
             const referencedSongs = new Set<string>();
-            let match: RegExpExecArray | null;
-            while ((match = regex.exec(text)) !== null) {
-                const [, , songName] = match;
-                referencedSongs.add(songName);
-            }
+            messageData.forEach((item: any) => {
+                if (item.song_name) {
+                    referencedSongs.add(item.song_name);
+                }
+            });
 
-            // 2. Only fetch colors for those songs
+            // Fetch colors for those songs
             for (const songName of referencedSongs) {
                 const song = songs.find((s) => s.clean_name === songName);
                 if (!song) continue;
@@ -64,7 +65,7 @@ const FormattedMessage = () => {
 
                     const color = await fac.getColor(img);
                     console.log(`Color for ${song.name}:`, color.hex);
-                    newColors[song.name] = color.hex;
+                    newColors[songName] = color.hex;
                 } catch (error) {
                     console.error(`Error processing ${songName}:`, error);
                 }
@@ -74,93 +75,103 @@ const FormattedMessage = () => {
         }
 
         loadColors();
-    }, [text]);
+    }, [messageData]);
 
     function getBeautifulContrast(hex: string): string {
         const color = tinycolor(hex);
         const isDark = color.isDark();
 
         if (isDark) {
-            // For dark colors, return a light, slightly warm color
             return color.lighten(60).desaturate(20).toString();
         } else {
-            // For light colors, return a dark, sophisticated color
             return color.darken(40).saturate(15).toString();
         }
     }
 
-    const renderPlainTextWords = (text: string, startKey: string) => {
-        return text.split(/(\s+)/).map((part, index) => {
-            if (part.match(/^\s+$/)) {
-                return part;
-            } else if (part.trim()) {
-                return (
-                    <span
-                        key={`${startKey}-${index}`}
-                        className="inline-flex items-center rounded text-black font-semibold"
-                    >
-                        <div className="h-8 opacity-0" />
-                        {part}
-                    </span>
-                );
-            }
-            return part;
-        });
-    };
-
-    // 3. Render text with highlights
-    const parts: (string | React.ReactNode)[] = [];
-    const regex = /\*(.*?)\*\s*\((.*?)\)/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    // If there's no text yet, parts will remain empty and we will show loader below
-    while ((match = regex.exec(text)) !== null) {
-        const [, lyric, songName] = match;
-        if (match.index > lastIndex) {
-            const plainText = text.slice(lastIndex, match.index);
-            parts.push(...renderPlainTextWords(plainText, `plain-${lastIndex}`));
+    const renderSentence = (item: any, index: number) => {
+        const song = songs.find((s) => s.clean_name === item.song_name);
+        const color = colors[item.song_name] || '#cccccc';
+        
+        const modifiedText = item.modified_sentence;
+        
+        // Find all text between asterisks using matchAll
+        const regex = /\*(.*?)\*/g;
+        const matches = Array.from(modifiedText.matchAll(regex));
+        
+        console.log(`Processing sentence ${index}:`, modifiedText);
+        console.log(`Found ${matches.length} matches:`, matches.map(m => m[1]));
+        
+        if (matches.length === 0) {
+            // No asterisks in modified sentence, just show plain text with period
+            return <span key={index}>{modifiedText}. </span>;
         }
-        const color = colors[songName] || '#ffffff'; // fallback
-        const song = songs.find((s) => s.clean_name === songName);
-        parts.push(
-            <span
-                key={match.index}
-                className="inline-flex items-center gap-1 rounded px-1 text-white font-bold"
-                style={{
-                    backgroundColor: color,
-                    color: getBeautifulContrast(color),
-                }}
-            >
-                {song && (
-                    <img
-                        src={song.album_art}
-                        alt={song.name}
-                        className="w-8 h-8 object-cover rounded-sm border transform rotate-[-17deg]"
-                    />
-                )}
-                <HoverCard>
-                    <HoverCardTrigger>
-                        <TextEffect per="char" preset="fade" speedReveal={0.5} speedSegment={0.3}>
-                            {lyric}
-                        </TextEffect>
-                    </HoverCardTrigger>
-                    <HoverCardContent>
-                        {song && song.name}
-                    </HoverCardContent>
-                </HoverCard>
+        
+        // Build the sentence with all highlighted parts
+        const parts: React.ReactNode[] = [];
+        let lastIndex = 0;
+        
+        matches.forEach((match, matchIndex) => {
+            const highlightedText = match[1];
+            const matchStart = match.index!;
+            
+            // Add text before this match
+            if (matchStart > lastIndex) {
+                parts.push(modifiedText.slice(lastIndex, matchStart));
+            }
+            
+            // Add highlighted text
+            parts.push(
+                <span
+                    key={`${index}-${matchIndex}`}
+                    className="inline-flex items-center gap-1 rounded px-1 text-white font-bold mx-0.5"
+                    style={{
+                        backgroundColor: color,
+                        color: getBeautifulContrast(color),
+                    }}
+                >
+                    {song && (
+                        <img
+                            src={song.album_art}
+                            alt={song.name}
+                            className="w-8 h-8 object-cover rounded-sm border transform rotate-[-17deg]"
+                        />
+                    )}
+                    <HoverCard>
+                        <HoverCardTrigger>
+                            <span className="cursor-pointer">
+                                <TextEffect per="char" preset="fade" speedReveal={0.5} speedSegment={0.3}>
+                                    {highlightedText}
+                                </TextEffect>
+                            </span>
+                        </HoverCardTrigger>
+                        <HoverCardContent>
+                            {song && song.name}
+                        </HoverCardContent>
+                    </HoverCard>
+                </span>
+            );
+            
+            lastIndex = matchStart + match[0].length;
+        });
+        
+        // Add any remaining text after the last match, plus period
+        if (lastIndex < modifiedText.length) {
+            parts.push(modifiedText.slice(lastIndex) + '. ');
+        } else {
+            parts.push('. ');
+        }
+
+        return (
+            <span key={index} className="inline">
+                {parts}
             </span>
         );
-        lastIndex = regex.lastIndex;
-    }
+    };
 
-
-    if (lastIndex < text.length) {
-        const remainingText = text.slice(lastIndex);
-        parts.push(...renderPlainTextWords(remainingText, 'remaining'));
-    }
-
-    const isWaitingForBot = lastBotMessage === undefined || lastBotMessage.message === '';
+    const isWaitingForBot = lastBotMessage === undefined || 
+                            lastBotMessage.message === '' || 
+                            lastBotMessage.message === null ||
+                            (Array.isArray(lastBotMessage.message) && lastBotMessage.message.length === 0);
 
     return (
         <div className="flex flex-1 h-full pt-2 pb-2 pl-8 pr-8 md:pl-16 md:pr-16 lg:pl-28 lg:pr-28">
@@ -169,7 +180,11 @@ const FormattedMessage = () => {
                     <Loader />
                 </div>
             ) : (
-                <p>{parts}</p>
+                <div className="text-base leading-relaxed">
+                    {Array.isArray(messageData) && messageData.map((item, index) => 
+                        renderSentence(item, index)
+                    )}
+                </div>
             )}
         </div>
     );

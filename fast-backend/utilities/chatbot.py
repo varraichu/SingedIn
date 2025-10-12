@@ -101,6 +101,7 @@ Instructions:
 - If no lyrics are provided, repeat the original sentence exactly.
 - Keep the overall tone consistent with the paragraph (storytelling, reflective, LinkedIn style).
 - NEVER add extra lyrics beyond the candidates.
+- NEVER change the song name's capitalisation or grammar.
                                                        
 Example output format:
 {{
@@ -204,7 +205,7 @@ Another example:
                         "sentence": sentence,
                         "lyrics": lyrics_text
                     })
-                    print(response)
+                    # print(response)
                     final_sentences.append(response)
                 except Exception as e:
                     return {"error: ", str(e)}

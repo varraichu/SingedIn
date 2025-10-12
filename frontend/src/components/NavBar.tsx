@@ -40,13 +40,13 @@ export default function NavBar() {
 
 
   useEffect(() => {
-    checkAuthStatus()
+    // checkAuthStatus()
   }, [])
 
 
   useEffect(() => {
     if (loggedIn && !userData) {
-      fetchUserData()
+      // fetchUserData()
     }
   }, [loggedIn])
 

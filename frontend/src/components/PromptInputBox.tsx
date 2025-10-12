@@ -62,9 +62,9 @@ const PromptInputBox = ({ showSuggestions = false }: PromptInputBoxProps) => {
                 },
                 body: JSON.stringify({ message: input })
             })
-            setInput('')    
+            setInput('')
             const botResponse = await response.json()
-            console.log("botReponse: ", botResponse)
+            // console.log("botReponse: ", botResponse)
             // addChatMessage("bot", botResponse.Massage)
             useChatStore.getState().updateLastBotMessage(botResponse.message);
         }
