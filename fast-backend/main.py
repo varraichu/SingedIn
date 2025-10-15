@@ -221,4 +221,4 @@ async def chat(conversation:Conversation, request: Request):
     vector_store = request.state.vector_store
     ai_chatbot = ChatBot(vector_store=vector_store)
     response = ai_chatbot.enhanceText(userMessage=conversation.message)
-    return {"message": response}
+    return {"message": response["final_sentences"], "statistics":response["statistics"]}
