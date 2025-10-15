@@ -5,11 +5,6 @@
         "album_art": "https://i.scdn.co/image/ab67616d0000b2730012067ab1c8966fc2c69063"
     },
     {
-        "name": "#3",
-        "artist": "Aphex Twin",
-        "album_art": "https://i.scdn.co/image/ab67616d0000b273d7dedd5e40da2782615b8fea"
-    },
-    {
         "name": "Restless",
         "artist": "SARRB",
         "album_art": "https://i.scdn.co/image/ab67616d0000b273bb59b6ff69d566814f1b8c7a"
@@ -105,11 +100,6 @@
         "album_art": "https://i.scdn.co/image/ab67616d0000b273df934f4de5f8dd46f8d75f5f"
     },
     {
-        "name": "Silver Thread Golden Needle",
-        "artist": "A. G. Cook",
-        "album_art": "https://i.scdn.co/image/ab67616d0000b2737f073a643f427db13ea969bf"
-    },
-    {
         "name": "rescue me (you don't know)",
         "artist": "akhun",
         "album_art": "https://i.scdn.co/image/ab67616d0000b2737681c5824592595142af4c6f"
@@ -155,11 +145,6 @@
         "album_art": "https://i.scdn.co/image/ab67616d0000b273ed317ec13d3de9e01fb99c9e"
     },
     {
-        "name": "Moonlight Flight",
-        "artist": "Joe Hisaishi",
-        "album_art": "https://i.scdn.co/image/ab67616d0000b273c6e983c5f493a1a0df3de6d4"
-    },
-    {
         "name": "Speed Drive (From Barbie The Album)",
         "artist": "Charli xcx",
         "album_art": "https://i.scdn.co/image/ab67616d0000b273cd6f4f3b7d178e0a8b963da1"
@@ -183,6 +168,11 @@
         "name": "Resonance",
         "artist": "Home",
         "album_art": "https://i.scdn.co/image/ab67616d0000b2730af0ed41bccac3425cb3730d"
+    },
+    {
+        "name": "feel the same",
+        "artist": "The Millennial Club",
+        "album_art": "https://i.scdn.co/image/ab67616d0000b2734a64c3938954c95aeb5af9c2"
     },
     {
         "name": "Level 4 Abandoned Office",
@@ -258,11 +248,6 @@
         "name": "Just For Me (with SZA) - Space Jam: A New Legacy",
         "artist": "SAINt JHN",
         "album_art": "https://i.scdn.co/image/ab67616d0000b273d0126e53352bb15e3e232643"
-    },
-    {
-        "name": "Idyll",
-        "artist": "A. G. Cook",
-        "album_art": "https://i.scdn.co/image/ab67616d0000b2735f4269ee2c76394d8f3d1309"
     },
     {
         "name": "Teens",

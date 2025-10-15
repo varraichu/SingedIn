@@ -19,7 +19,8 @@ api_key = os.getenv("OPENAI_API_KEY")
 def initialiseChromaClient():
     print("Setting up chroma db")
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DB_DIR = os.path.join(BASE_DIR, "..", "my_chroma_db")
+    # DB_DIR = os.path.join(BASE_DIR, "..", "my_chroma_db")
+    DB_DIR = os.path.join(BASE_DIR, "..", "my_chorus_db")
     client = chromadb.PersistentClient(path=DB_DIR)
 
     # try:
@@ -43,7 +44,8 @@ def addDataToVectorStore(vector_store):
     text_loader_kwargs = {"autodetect_encoding": True}
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    LYRICS_DIR = os.path.join(BASE_DIR, "..", "lyrics")
+    # LYRICS_DIR = os.path.join(BASE_DIR, "..", "lyrics")
+    LYRICS_DIR = os.path.join(BASE_DIR, "..", "lyrics_chorus")
 
     loader = DirectoryLoader(LYRICS_DIR, glob="**/*.txt", show_progress=True, loader_cls=TextLoader, loader_kwargs=text_loader_kwargs)
     raw_docs = loader.load()

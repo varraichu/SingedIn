@@ -6,7 +6,7 @@ from lyricsgenius import Genius
 from langdetect import detect
 from dotenv import load_dotenv
 
-from helpers.lyrics_helper import clean_lyrics, detect_encoding
+from helpers.lyrics_helper import clean_lyrics, detect_encoding, extract_unique_non_verse_sections
 
 load_dotenv()
 
@@ -26,16 +26,19 @@ token = os.getenv("GENIUS_ACCESS_TOKEN")
 genius = Genius(
     token,
     timeout=60,                 
-    remove_section_headers=True,
     retries=3    
 )
 
 data2 = []
 
 # Make sure output folder exists
-os.makedirs("lyrics", exist_ok=True)
-os.makedirs("empty_lyrics", exist_ok=True)
-os.makedirs("non_english_lyrics", exist_ok=True)
+LYRICS_DIR = os.path.join(BASE_DIR, "..", "lyrics_chorus")
+EMPTY_DIR = os.path.join(BASE_DIR, "..", "empty_lyrics_chorus")
+NON_ENGLISH_DIR = os.path.join(BASE_DIR,"..", "non_english_lyrics_chorus")
+
+os.makedirs(LYRICS_DIR, exist_ok=True)
+os.makedirs(EMPTY_DIR, exist_ok=True)
+os.makedirs(NON_ENGLISH_DIR, exist_ok=True)
 
 def fetchLyricsForSongs():
     for idx, liked_song in enumerate(data, start=1):
@@ -48,9 +51,9 @@ def fetchLyricsForSongs():
         file_name = f"{safe_artist}_{safe_song}.txt"
 
         # Skip if already saved
-        if (os.path.exists(os.path.join("lyrics", file_name)) or 
-            os.path.exists(os.path.join("empty_lyrics", file_name)) or
-            os.path.exists(os.path.join("non_english_lyrics", file_name))):
+        if (os.path.exists(os.path.join(LYRICS_DIR, file_name)) or 
+            os.path.exists(os.path.join(EMPTY_DIR, file_name)) or
+            os.path.exists(os.path.join(NON_ENGLISH_DIR, file_name))):
             print(f"⏩ Skipping {song_name} by {artist} (already saved)")
             continue
 
@@ -59,10 +62,14 @@ def fetchLyricsForSongs():
             song = genius.search_song(song_name, artist)
 
             if song:
-                formattedLyrics = clean_lyrics(song.lyrics)
-                
+                # print("lyrics: ", song.lyrics, "\n")
+                # cleaned_lyrics = clean_lyrics(song.lyrics)
+                # print("cleaned lyrics: ", cleaned_lyrics, "\n")
+            
+                formattedLyrics = extract_unique_non_verse_sections(song.lyrics)
+                # print("formatted lyrics: ", formattedLyrics, "\n")
                 if not formattedLyrics:
-                    file_path = os.path.join("empty_lyrics", file_name)
+                    file_path = os.path.join(EMPTY_DIR, file_name)
                     with open(file_path, "w", encoding="utf-8") as f:
                         f.write(formattedLyrics)
                     print(f"Empty lyrics saved for {song_name} by {artist}")
@@ -71,13 +78,13 @@ def fetchLyricsForSongs():
                 try:
                     lang = detect(formattedLyrics)
                     if lang != "en":
-                        file_path = os.path.join("non_english_lyrics", file_name)
+                        file_path = os.path.join(NON_ENGLISH_DIR, file_name)
                         print(f"Non-English lyrics detected for {song_name} by {artist}")
                     else:
-                        file_path = os.path.join("lyrics", file_name)
+                        file_path = os.path.join(LYRICS_DIR, file_name)
                 except Exception as e:
                     print("error detecting file language: ", e)
-                    file_path = os.path.join("lyrics", file_name)
+                    file_path = os.path.join(LYRICS_DIR, file_name)
 
 
 
@@ -113,33 +120,3 @@ def fetchLyricsForSongs():
     MISSING_SONGS_PATH = os.path.join(FILES_DIR, "missing_songs.json")
     with open(MISSING_SONGS_PATH, "w", encoding="utf-8") as new_file:
         json.dump(data2, new_file, ensure_ascii=False, indent=4)
-
-
-# song_name = "Life is good"
-# artist = "Future"
-
-#     # Sanitize filename
-# safe_artist = "".join(c for c in artist if c.isalnum() or c in " _-").strip()
-# safe_song = "".join(c for c in song_name if c.isalnum() or c in " _-").strip()
-# file_name = f"{safe_artist}_{safe_song}.txt"
-# file_path = os.path.join("lyrics", file_name)
-
-# # Skip if already saved
-# if os.path.exists(file_path):
-#     print(f"⏩ Skipping {song_name} by {artist} (already saved)")
-
-# try:
-#     song = genius.search_song(song_name, artist)
-
-#     if song:
-#         with open(file_path, "w", encoding="utf-8") as f:
-#             f.write(clean_lyrics(song.lyrics))
-#         print(f"✅ Saved lyrics for {song_name} by {artist}")
-#     else:
-#         print(f"❌ Lyrics not found for {song_name} by {artist}")
-
-# except Exception as e:
-#     print(f"⚠️ Error with {song_name} by {artist}: {e}")
-
-#     # Delay to avoid rate-limiting
-# time.sleep(1)

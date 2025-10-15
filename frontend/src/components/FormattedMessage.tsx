@@ -103,7 +103,7 @@ const FormattedMessage = () => {
         
         if (matches.length === 0) {
             // No asterisks in modified sentence, just show plain text with period
-            return <span key={index}>{modifiedText}. </span>;
+            return <span key={index}>{modifiedText}{" "} </span>;
         }
         
         // Build the sentence with all highlighted parts
@@ -156,7 +156,7 @@ const FormattedMessage = () => {
         
         // Add any remaining text after the last match, plus period
         if (lastIndex < modifiedText.length) {
-            parts.push(modifiedText.slice(lastIndex) + '. ');
+            parts.push(modifiedText.slice(lastIndex));
         } else {
             parts.push('. ');
         }

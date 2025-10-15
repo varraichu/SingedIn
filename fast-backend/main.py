@@ -2,6 +2,7 @@ import os, json
 import base64
 import requests
 import httpx
+import nltk
 
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
@@ -24,13 +25,28 @@ REDIRECT_URI = os.getenv('REDIRECT_URI')
 FRONTEND_URI = os.getenv('FRONTEND_URI')
 # vector_store = None
 
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+import nltk
+
 @asynccontextmanager
-async def lifespan(app:FastAPI):
+async def lifespan(app: FastAPI):
     print("Backend Starting")
+
+    for pkg in ["punkt", "punkt_tab"]:
+        try:
+            nltk.data.find(f"tokenizers/{pkg}")
+        except LookupError:
+            print(f"Downloading missing NLTK resource: {pkg}")
+            nltk.download(pkg)
+
     vector_store = initialiseChromaClient()
-    print("vector store: ", vector_store)
+    print("vector store:", vector_store)
+
     yield {"vector_store": vector_store}
+
     print("Backend Shutting Down")
+
 
 
 app = FastAPI(lifespan=lifespan)
