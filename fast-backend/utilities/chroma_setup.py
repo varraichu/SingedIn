@@ -19,18 +19,15 @@ api_key = os.getenv("OPENAI_API_KEY")
 def initialiseChromaClient():
     print("Setting up chroma db")
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    # DB_DIR = os.path.join(BASE_DIR, "..", "my_chroma_db")
     DB_DIR = os.path.join(BASE_DIR, "..", "my_chorus_db")
     client = chromadb.PersistentClient(path=DB_DIR)
 
-    # try:
-    #     print("collection already exists, deleting")
-    #     client.delete_collection("lyrics-embeddings")
-    # except Exception as e:
-    #     print("Deleting collection failed: ", e)
-
-    print("creating collection")
-    collection = client.get_or_create_collection(name="lyrics-embeddings")
+    try:
+        print("Creating collection")
+        client.get_or_create_collection(name="lyrics-embeddings")
+    except Exception as e:
+        print("Creating collection failed: ", e)
+    
     print("Chroma db setup successfully")
 
     return Chroma(
@@ -44,7 +41,6 @@ def addDataToVectorStore(vector_store):
     text_loader_kwargs = {"autodetect_encoding": True}
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    # LYRICS_DIR = os.path.join(BASE_DIR, "..", "lyrics")
     LYRICS_DIR = os.path.join(BASE_DIR, "..", "lyrics_chorus")
 
     loader = DirectoryLoader(LYRICS_DIR, glob="**/*.txt", show_progress=True, loader_cls=TextLoader, loader_kwargs=text_loader_kwargs)
@@ -70,7 +66,6 @@ def addDataToVectorStore(vector_store):
         safe_song = "".join(c for c in song if c.isalnum() or c in " _-").strip()
         metadatas.append({"artist": artist, "song": safe_song})
     
-    # print("metadatas: ", metadatas)
     chunks = text_splitter.create_documents(texts=texts, metadatas=metadatas)
     print(f"Adding {len(chunks)} chunks to chroma db ")
     BATCH_SIZE = 5000

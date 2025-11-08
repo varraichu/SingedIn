@@ -27,7 +27,6 @@ interface User {
 }
 
 export default function NavBar() {
-  let url = location.href;
 
   const [loggedIn, setLoggedIn] = useState(false)
   const [userData, setUserData] = useState<User | null>(null)

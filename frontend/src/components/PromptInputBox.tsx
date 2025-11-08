@@ -1,20 +1,12 @@
-import React, { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
     PromptInput,
-    PromptInputActionAddAttachments,
     PromptInputActionMenu,
-    PromptInputActionMenuContent,
-    PromptInputActionMenuItem,
-    PromptInputActionMenuTrigger,
-    PromptInputAttachment,
-    PromptInputAttachments,
     PromptInputBody,
-    PromptInputButton,
     PromptInputSubmit,
     PromptInputTextarea,
     PromptInputToolbar,
     PromptInputTools,
-    usePromptInputAttachments,
     PromptInputModelSelect,
     PromptInputModelSelectContent,
     PromptInputModelSelectItem,
@@ -22,9 +14,7 @@ import {
     PromptInputModelSelectValue,
 } from '@/components/ai-elements/prompt-input';
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
-import { useNavigate } from "react-router";
 import useChatStore from '@/store/chatStore';
-import { json } from 'stream/consumers';
 
 const suggestions = [
     'Can you explain how to play tennis?',
@@ -42,16 +32,25 @@ const PromptInputBox = ({ showSuggestions = false }: PromptInputBoxProps) => {
     const [model, setModel] = useState<string>(models[0].id);
     const [input, setInput] = useState('');
     const addChatMessage = useChatStore((state) => state.addMessage);
-
-    let navigate = useNavigate();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const temperature = useChatStore((state)=> state.temperature);
+    const similarity = useChatStore((state)=> state.similarity);
 
     const sendMessage = async () => {
-        console.log("input: ", input);
-        addChatMessage("user", input)
-        
+        if (!input.trim()) return;
+        const message = input
+        setInput('')
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+        }
+        console.log("input: ", message);
+        addChatMessage("user", message)
+
         addChatMessage("bot", "")
-        
-        navigate("/chat/response");
+
+        // navigate("/chat/response");
+        console.log("temp: ", temperature)
+        console.log("sim: ", similarity)
 
         try {
             const url = 'http://127.0.0.1:8000/api/chat'
@@ -60,12 +59,9 @@ const PromptInputBox = ({ showSuggestions = false }: PromptInputBoxProps) => {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ message: input })
+                body: JSON.stringify({ message: message, temperature: temperature, similarity: similarity, })
             })
-            setInput('')
             const botResponse = await response.json()
-            // console.log("botReponse: ", botResponse)
-            // addChatMessage("bot", botResponse.Massage)
             useChatStore.getState().updateLastBotMessage(botResponse.message);
         }
         catch (error) {
@@ -83,6 +79,7 @@ const PromptInputBox = ({ showSuggestions = false }: PromptInputBoxProps) => {
                 <PromptInput onSubmit={sendMessage} className="relative">
                     <PromptInputBody>
                         <PromptInputTextarea
+                            ref={textareaRef}
                             value={input}
                             placeholder="Say something..."
                             onChange={(e) => setInput(e.currentTarget.value)}
@@ -111,7 +108,7 @@ const PromptInputBox = ({ showSuggestions = false }: PromptInputBoxProps) => {
                             </PromptInputModelSelect>
                         </PromptInputTools>
                         <PromptInputSubmit
-                            disabled={false}
+                            disabled={!input.trim()}
                             status={'ready'}
                         />
                     </PromptInputToolbar>

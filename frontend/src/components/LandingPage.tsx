@@ -1,21 +1,34 @@
-import React, { useState } from 'react'
 import NavBar from './NavBar'
-import { MicVocal } from 'lucide-react';
 import PromptInputBox from './PromptInputBox';
+import FormattedMessage from './FormattedMessage';
+import CopyText from './CopyText';
+import ControlBar from './ControlBar';
 
 const LandingPage = () => {
 
     return (
-        <div className='h-screen flex flex-col bg-background'>
-            <NavBar></NavBar>
-            <div className='flex flex-col items-center justify-center w-full flex-1 overflow-y-auto'>
-                <div className='flex flex-row items-center justify-center mb-4'>
-                    <h1>Hello, lets SING! </h1>
-                    {/* <span><MicVocal /></span> */}
+        <div className="h-screen flex flex-col bg-background">
+            <NavBar />
+            {/* <Sidebar/> */}
+            <div className='flex flex-row flex-1 min-h-0'>
+
+                <div className="flex flex-col flex-1 min-h-0 m-4">
+                    <div className="relative flex-1 mb-1 rounded-xl border overflow-hidden">
+                        <div className="h-full overflow-y-auto">
+                            <FormattedMessage />
+                        </div>
+                    </div>
+
+                    <div className='flex mb-1 w-full items-center justify-start'>
+                        <CopyText />
+                    </div>
+
+                    <div className="flex-shrink-0">
+                        <PromptInputBox showSuggestions={false} />
+                    </div>
                 </div>
-                <div className='sm:w-7/12'>
-                    <PromptInputBox showSuggestions={true} />
-                </div>
+
+                <ControlBar/>
             </div>
         </div>
     )

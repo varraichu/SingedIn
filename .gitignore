@@ -141,13 +141,9 @@ vite.config.ts.timestamp-*
 liked_songs.json
 missing_lyrics.json
 
-fast-backend/lyrics/
-fast-backend/non_english_lyrics/
-fast-backend/empty_lyrics/
 fast-backend/lyrics_chorus/
 fast-backend/non_english_lyrics_chorus/
 fast-backend/empty_lyrics_chorus/
 fast-backend/.venv
-fast-backend/my_chroma_db
 fast-backend/my_chorus_db
 __pycache__/

@@ -1,18 +1,11 @@
 import os
 
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_community.callbacks import get_openai_callback
-from langchain_experimental.text_splitter import SemanticChunker
-from langchain_text_splitters import RecursiveCharacterTextSplitter, CharacterTextSplitter
-from langchain_openai.embeddings import OpenAIEmbeddings
-from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.retrievers.multi_query import MultiQueryRetriever
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor, EmbeddingsFilter
-
 from langchain.globals import set_debug, set_verbose
+
 
 from nltk.tokenize import sent_tokenize
 
@@ -22,7 +15,6 @@ load_dotenv()
 
 # set_debug(True)
 
-# Access variables
 api_key = os.getenv("OPENAI_API_KEY")
 
 class ChatBot:
@@ -30,16 +22,6 @@ class ChatBot:
         self.llm = ChatOpenAI(
             model="gpt-4o-mini",
             temperature=0.3
-        )
-
-        #plain retriever
-        self.retriever = vector_store.as_retriever(   
-            search_type='mmr',
-            search_kwargs={
-                "k": 3,
-                "score_threshold": 0.9,
-                "lambda_mult": 0.75,
-            }
         )
 
         #multi-query retriever
@@ -53,23 +35,6 @@ class ChatBot:
                 }
             ), llm=self.llm
         )
-
-        #compression retriever
-        compressor = LLMChainExtractor.from_llm(self.llm)
-
-        self.embeddings_filter = EmbeddingsFilter(embeddings=OpenAIEmbeddings(model="text-embedding-3-small"), similarity_threshold=0.7)
-
-        self.compression_retriever = ContextualCompressionRetriever(
-            # base_compressor=self.embeddings_filter, base_retriever=self.retriever
-            base_compressor=compressor, base_retriever=self.retriever
-        )
-
-        self.sentence_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=250,
-            chunk_overlap=0,
-            separators=["\n\n", "\n", ".", "?"]
-        )
-        
 
         self.schema = {
                 "title": "lyrics_remix",
@@ -115,6 +80,7 @@ Instructions:
 - Change the grammar of the lyric to match the tense and perspective of the original sentence (e.g., past to present, third person to first person, etc.).
 - Ensure the modified sentence flows naturally when read between the previous and next sentences.
 - Maintain consistent tone with the surrounding context (storytelling, reflective, LinkedIn style).
+- CRITICAL: Preserve all [NEWLINE] tokens exactly as they appear in the original sentence
 - If none of the lyrics fit naturally, return the original sentence unchanged.
 - If no lyrics are provided, return the original sentence exactly.
 - NEVER add extra lyrics beyond the candidates provided.
@@ -137,26 +103,9 @@ Another example:
     'song_name': 'Example Song'
 }}
 
-""")
-
-        self.prompt_second_pass = ChatPromptTemplate.from_template("""
-            You are taking an array with chunks of sentences, and fixing their grammar so that the final sentences match the original paragraph sent.
-        Original Paragraph:
-        {paragraph}
-
-        Array with sentences:
-        {array}
-                                                                                                                                                        Instructions:
-- Fix grammar/flow in the modified_sentence fields only
-- Keep all other fields (original_sentence, lyrics, song_name) unchanged
-- Maintain the ** markers around lyric-influenced text
-""")
-            
-
-
+""")        
 
     def retrieveLyrics(self, userMessage):
-        # sentence_chunks = self.sentence_splitter.split_text(userMessage)
         sentence_chunks = sent_tokenize(userMessage)
         print("sentence chunks = ", len(sentence_chunks))
 
@@ -164,106 +113,111 @@ Another example:
             
         for i, chunk in enumerate(sentence_chunks):
             print(f"Processing chunk {i+1}/{len(sentence_chunks)}")
-                
-            # similar_lyrics = self.compression_retriever.invoke(chunk)
-            similar_lyrics = self.multi_query_retriever.invoke(chunk)
-                
-            chunk_result = {
-                "chunk_index": i,
-                "original_chunk": chunk,
-                "retrieved_lyrics": []
-            }
-                
-            for j, doc in enumerate(similar_lyrics):
-                lyric_info = {
-                    "content": doc.page_content,
-                    "metadata": doc.metadata,
-                    "rank": j + 1
+            if len(chunk) >= 10:    
+                similar_lyrics = self.multi_query_retriever.invoke(chunk)
+                    
+                chunk_result = {
+                    "chunk_index": i,
+                    "original_chunk": chunk,
+                    "retrieved_lyrics": []
                 }
-                chunk_result["retrieved_lyrics"].append(lyric_info)
-                
-            results.append(chunk_result)
-        # print("results: ", results)
+                    
+                for j, doc in enumerate(similar_lyrics):
+                    lyric_info = {
+                        "content": doc.page_content,
+                        "metadata": doc.metadata,
+                        "rank": j + 1
+                    }
+                    chunk_result["retrieved_lyrics"].append(lyric_info)
+                    
+                results.append(chunk_result)
+            else:
+                chunk_result = {
+                    "chunk_index": i,
+                    "original_chunk": chunk,
+                    "retrieved_lyrics": []
+                }
+                results.append(chunk_result)
         return results
-
-    def secondPass(self, userMessage, firstPassOutput):
-        chain = self.prompt_second_pass | self.llm.with_structured_output(self.schema)
-        try:
-            response = chain.invoke({
-                        "paragraph": userMessage,
-                        "array": firstPassOutput
-                    })
-            print("second pass response: ", response)
-            return response
-        except Exception as e:
-            return {"error: ", str(e)}
 
     def enhanceText(self, userMessage):
         chain = self.prompt | self.llm.with_structured_output(self.schema)
-
-        fetchedLyrics = self.retrieveLyrics(userMessage)
-
+        
+        # Step 1: Split by paragraphs but keep track of boundaries
+        paragraphs = userMessage.split('\n')
+        
+        # Step 2: Fetch lyrics for ALL sentences across ALL paragraphs
+        all_sentences = []  # Flat list of all sentence chunks
+        paragraph_boundaries = []  # Track where each paragraph ends
+        
+        for para_idx, para in enumerate(paragraphs):
+            if not para.strip():  # Skip empty paragraphs
+                continue
+                
+            fetchedLyrics = self.retrieveLyrics(para)
+            
+            start_idx = len(all_sentences)
+            all_sentences.extend(fetchedLyrics)
+            end_idx = len(all_sentences)
+            
+            paragraph_boundaries.append({
+                'para_idx': para_idx,
+                'start': start_idx,
+                'end': end_idx
+            })
+        
+        # Step 3: Process with GLOBAL context (previous/next across paragraphs)
         final_sentences = []
-        statistics = {}
-        statistics["total_sentences"] = len(fetchedLyrics)
-        statistics["total_tokens"] = 0
-        statistics["prompt_tokens"] = 0
-        statistics["completion_tokens"] = 0
-        statistics["total_cost"] = 0
-        statistics["total_llm_calls"] = 0
-
-        for i, chunk_result in enumerate(fetchedLyrics):
+        statistics = {
+            "total_sentences": len(all_sentences),
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_cost": 0,
+            "total_llm_calls": 0
+        }
+        
+        for i, chunk_result in enumerate(all_sentences):
             previous_sentence = ""
             next_sentence = ""
-            if i != 0:
-                previous_sentence = fetchedLyrics[i-1]["original_chunk"]
             
-            if i != len(fetchedLyrics)-1:
-                next_sentence = fetchedLyrics[i+1]["original_chunk"]
-
+            # Get previous sentence (even from previous paragraph)
+            if i > 0:
+                previous_sentence = all_sentences[i-1]["original_chunk"]
+            
+            # Get next sentence (even from next paragraph)
+            if i < len(all_sentences) - 1:
+                next_sentence = all_sentences[i+1]["original_chunk"]
+            
             sentence = chunk_result["original_chunk"]
-            # print(f"prev: {previous_sentence}\n")            
-            # print(f"next: {next_sentence}\n")            
-            # Format lyrics with song title/source information
+            
+            # ... your existing lyrics formatting code ...
             lyrics = []
             for l in chunk_result["retrieved_lyrics"][:2]:
                 content = l["content"]
                 metadata = l["metadata"]
-                
-                # Extract song title from metadata
-                # Adjust these keys based on your actual metadata structure
                 song_title = metadata.get("song") or metadata.get("title") or metadata.get("source", "Unknown Song")
-                
                 lyrics.append(f"- \"{content}\" from: {song_title}")
-
+            
             lyrics_text = "\n".join(lyrics)
-            # Run LLM chain
-            if lyrics_text == '':
+            
+            # Handle empty cases
+            if not lyrics_text or not sentence:
                 formatted_output = {
-    'original_sentence': sentence, 
-    'lyrics': "", 
-    'modified_sentence': sentence, 
-    'song_name': ''
-}
-                final_sentences.append(formatted_output)
-            elif sentence == '':
-                formatted_output = {
-    'original_sentence': sentence, 
-    'lyrics': "", 
-    'modified_sentence': sentence, 
-    'song_name': ''
-}
+                    'original_sentence': sentence, 
+                    'lyrics': lyrics_text, 
+                    'modified_sentence': sentence, 
+                    'song_name': ''
+                }
                 final_sentences.append(formatted_output)
             else:
-                # print(f"\n{'='*50}")
-                # print(f"SENTENCE: {sentence}")
-                # print(f"\nLYRICS:\n{lyrics_text}")
-                # print(f"{'='*50}\n")
-
-                # formatted_prompt = self.prompt.format(sentence=sentence, lyrics=lyrics_text)
-                # print(f"FORMATTED PROMPT:\n{formatted_prompt}\n")
-                # print(f"sentence: {sentence}, lyrics: {lyrics_text}\n")
                 try:
+                    print("="*50)
+                    print(f"prev: {previous_sentence}")
+                    print(f"current: {sentence}")
+                    print(f"next: {next_sentence}")
+                    print("="*50)
+                    print("\n")
                     with get_openai_callback() as cb:
                         response = chain.invoke({
                             "previous_sentence": previous_sentence,
@@ -271,118 +225,22 @@ Another example:
                             "sentence": sentence,
                             "lyrics": lyrics_text
                         })
-                        # print(response)
                         final_sentences.append(response)
+                    
                     statistics["total_tokens"] += cb.total_tokens
                     statistics["prompt_tokens"] += cb.prompt_tokens
                     statistics["completion_tokens"] += cb.completion_tokens
                     statistics["total_cost"] += cb.total_cost
                     statistics["total_llm_calls"] += 1
                 except Exception as e:
-                    return {"error: ", str(e)}
-                
-                # final_sentences.append(response.content.strip())
-
-        # final_paragraph = " ".join(final_sentences)
-        print("\n")
-        print("---")
-        print(f"Total sentences: {statistics["total_sentences"]}")
-        print(f"Total Tokens: {statistics["total_tokens"]}")
-        print(f"Prompt Tokens: {statistics["prompt_tokens"]}")
-        print(f"Completion Tokens: {statistics["completion_tokens"]}")
-        print(f"Total Cost (USD): ${statistics["total_cost"]}")
-        print(f"Total LLM Calls: {statistics["total_llm_calls"]}")
-        print(final_sentences)
-        # final_response = self.secondPass(userMessage, final_sentences)
-        # print("\n")
-        # print("Grande finale",final_response)
+                    return {"error": str(e)}
+        
+        # Step 4: Add newlines at paragraph boundaries
+        for boundary in paragraph_boundaries:
+            if boundary['end'] - 1 < len(final_sentences):
+                final_sentences[boundary['end'] - 1]['modified_sentence'] += '\n'
+        
+        print(f"\nTotal sentences: {statistics['total_sentences']}")
+        print(f"Total Cost (USD): ${statistics['total_cost']}")
+        
         return {"final_sentences": final_sentences, "statistics": statistics}
-    
-    def retrieveLyricsForFullText(self, userMessage):
-
-        similar_lyrics = self.multi_query_retriever.invoke(userMessage)
-        chunk_result = []
-                
-        for j, doc in enumerate(similar_lyrics):
-            lyric_info = {
-                "content": doc.page_content,
-                "metadata": doc.metadata,
-                "rank": j + 1
-            }
-            chunk_result.append(lyric_info)
-        print(f"Retrieval length: {len(chunk_result)}")
-        print(chunk_result)
-        return chunk_result
-
-    def singText(self, userMessage):
-        chain = self.prompt | self.llm.with_structured_output(self.schema)
-
-        fetchedLyrics = self.retrieveLyricsForFullText(userMessage)
-        print("\n")
-        print(f"fetched lyrics length: {len(fetchedLyrics)}")
-        print("\n")
-        final_sentences = []
-
-        lyrics = []
-        for chunk_result in fetchedLyrics:
-            sentence = userMessage
-            print(f"chunk result: {chunk_result}, \n")
-            
-            # Format lyrics with song title/source information
-            content = chunk_result["content"]
-            metadata = chunk_result["metadata"]
-                
-            # Extract song title from metadata
-            # Adjust these keys based on your actual metadata structure
-            song_title = metadata.get("song") or metadata.get("title") or metadata.get("source", "Unknown Song")
-                
-            lyrics.append(f"- \"{content}\" from: {song_title}")
-
-        lyrics_text = "\n".join(lyrics)
-        # Run LLM chain
-        if lyrics_text == '':
-                formatted_output = {
-    'original_sentence': sentence, 
-    'lyrics': "", 
-    'modified_sentence': sentence, 
-    'song_name': ''
-}
-                final_sentences.append(formatted_output)
-        elif sentence == '':
-                formatted_output = {
-    'original_sentence': sentence, 
-    'lyrics': "", 
-    'modified_sentence': sentence, 
-    'song_name': ''
-}
-                final_sentences.append(formatted_output)
-        else:
-                print(f"\n{'='*50}")
-                print(f"SENTENCE: {sentence}")
-               
-                print(f"lyrics length: {len(lyrics)}")
-                print(f"{'='*50}\n")
-
-                # formatted_prompt = self.prompt.format(sentence=sentence, lyrics=lyrics_text)
-                # print(f"FORMATTED PROMPT:\n{formatted_prompt}\n")
-                # print(f"sentence: {sentence}, lyrics: {lyrics_text}\n")
-                try:
-
-                    response = chain.invoke({
-                        "sentence": sentence,
-                        "lyrics": lyrics_text
-                    })
-                    # print(response)
-                    final_sentences.append(response)
-                except Exception as e:
-                    return {"error: ", str(e)}
-                
-                # final_sentences.append(response.content.strip())
-    
-        # final_paragraph = " ".join(final_sentences)
-        print(final_sentences)
-        # final_response = self.secondPass(userMessage, final_sentences)
-        print("\n")
-        # print("Grande finale",final_response)
-        return final_sentences
-        # return final_response

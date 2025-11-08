@@ -23,7 +23,6 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 REDIRECT_URI = os.getenv('REDIRECT_URI')
 FRONTEND_URI = os.getenv('FRONTEND_URI')
-# vector_store = None
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -53,19 +52,21 @@ app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://127.0.0.1:5173",
-    "http://localhost:5173",  # sometimes Vite uses this
+    "http://localhost:5173",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,        # or ["*"] for all origins
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],          # allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],          # allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 class Conversation(BaseModel):
     message: str
+    temperature: float
+    similarity: float
 
 class UserData():
     username: str
@@ -209,15 +210,20 @@ async def get_all_liked_songs(access_token: str = Cookie(None)):
 
 @app.get('/api/get_lyrics')
 async def getLyrics(request: Request):
+    
+    
     # fetchLyricsForSongs()
+    
     vector_store = request.state.vector_store
-    print("Vectoriana= ", vector_store)
+    
     addDataToVectorStore(vector_store=vector_store)
     return {"message" : "lyrics fetched"}
 
 
 @app.post("/api/chat")
 async def chat(conversation:Conversation, request: Request):
+    print(conversation.temperature)
+    print(conversation.similarity)
     vector_store = request.state.vector_store
     ai_chatbot = ChatBot(vector_store=vector_store)
     response = ai_chatbot.enhanceText(userMessage=conversation.message)

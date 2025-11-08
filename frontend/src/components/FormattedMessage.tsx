@@ -33,7 +33,7 @@ const FormattedMessage = () => {
         console.log("bot message: ", messageData)
         async function loadColors() {
             const newColors: Record<string, string> = {};
-            
+
             // Check if messageData is an array
             if (!Array.isArray(messageData) || messageData.length === 0) {
                 setColors({});
@@ -88,78 +88,149 @@ const FormattedMessage = () => {
         }
     }
 
+    const renderTextWithNewlines = (text: string, parts: React.ReactNode[], keyPrefix: string) => {
+        // Split text by newlines and add <br /> elements
+        const lines = text.split('\n');
+        lines.forEach((line, lineIndex) => {
+            if (line) {
+                parts.push(
+                    <span
+                        key={`${keyPrefix}-line-${lineIndex}`}
+                        className="items-center gap-1 px-1 text-gray-800 font-medium align-middle"
+                    >
+                        {line}
+                    </span>
+                );
+            }
+            // Add line break after each line except the last one
+            if (lineIndex < lines.length - 1) {
+                parts.push(<br key={`${keyPrefix}-br-${lineIndex}`} />);
+            }
+        });
+    };
+
     const renderSentence = (item: any, index: number) => {
         const song = songs.find((s) => s.clean_name === item.song_name);
         const color = colors[item.song_name] || '#cccccc';
-        
+
         const modifiedText = item.modified_sentence;
-        
+
         // Find all text between asterisks using matchAll
         const regex = /\*(.*?)\*/g;
         const matches = Array.from(modifiedText.matchAll(regex));
-        
+
         console.log(`Processing sentence ${index}:`, modifiedText);
         console.log(`Found ${matches.length} matches:`, matches.map(m => m[1]));
-        
+
         if (matches.length === 0) {
-            // No asterisks in modified sentence, just show plain text with period
-            return <span key={index}>{modifiedText}{" "} </span>;
+            // No asterisks in modified sentence, handle newlines and show plain text
+            const parts: React.ReactNode[] = [];
+            renderTextWithNewlines(modifiedText, parts, `plain-${index}`);
+            return <span key={index}>{parts}{" "}</span>;
         }
-        
+
         // Build the sentence with all highlighted parts
         const parts: React.ReactNode[] = [];
         let lastIndex = 0;
-        
+
         matches.forEach((match, matchIndex) => {
             const highlightedText = match[1];
             const matchStart = match.index!;
-            
-            // Add text before this match
+
+            // Add text before this match (with newline handling)
             if (matchStart > lastIndex) {
-                parts.push(modifiedText.slice(lastIndex, matchStart));
+                const textBefore = modifiedText.slice(lastIndex, matchStart);
+                renderTextWithNewlines(textBefore, parts, `before-${index}-${matchIndex}`);
             }
-            
-            // Add highlighted text
-            parts.push(
-                <span
-                    key={`${index}-${matchIndex}`}
-                    className="inline-flex items-center gap-1 rounded px-1 text-white font-bold mx-0.5"
-                    style={{
-                        backgroundColor: color,
-                        color: getBeautifulContrast(color),
-                    }}
-                >
-                    {song && (
-                        <img
-                            src={song.album_art}
-                            alt={song.name}
-                            className="w-8 h-8 object-cover rounded-sm border transform rotate-[-17deg]"
-                        />
-                    )}
-                    <HoverCard>
-                        <HoverCardTrigger>
-                            <span className="cursor-pointer">
-                                <TextEffect per="char" preset="fade" speedReveal={0.5} speedSegment={0.3}>
-                                    {highlightedText}
-                                </TextEffect>
+
+            // Check if highlighted text contains newlines
+            const highlightLines = highlightedText.split('\n');
+
+            if (highlightLines.length === 1) {
+                // No newlines in highlighted text - simple case
+                parts.push(
+                    <span
+                        key={`${index}-${matchIndex}`}
+                        className="inline-flex items-center gap-1 rounded px-1 text-white font-bold mx-0.5 align-middle"
+                        style={{
+                            backgroundColor: color,
+                            color: getBeautifulContrast(color),
+                        }}
+                    >
+                        {song && (
+                            <img
+                                src={song.album_art}
+                                alt={song.name}
+                                className="w-8 h-8 object-cover rounded-sm border transform rotate-[-17deg]"
+                            />
+                        )}
+                        <HoverCard>
+                            <HoverCardTrigger>
+                                <span className="cursor-pointer">
+                                    <TextEffect per="char" preset="fade" speedReveal={0.5} speedSegment={0.3}>
+                                        {highlightedText}
+                                    </TextEffect>
+                                </span>
+                            </HoverCardTrigger>
+                            <HoverCardContent>
+                                {song && song.name}
+                            </HoverCardContent>
+                        </HoverCard>
+                    </span>
+                );
+            } else {
+                // Highlighted text contains newlines - render each line separately
+                highlightLines.forEach((line, lineIdx) => {
+                    if (line) {
+                        parts.push(
+                            <span
+                                key={`${index}-${matchIndex}-line-${lineIdx}`}
+                                className="inline-flex items-center gap-1 rounded px-1 text-white font-bold mx-0.5"
+                                style={{
+                                    backgroundColor: color,
+                                    color: getBeautifulContrast(color),
+                                }}
+                            >
+                                {song && lineIdx === 0 && (
+                                    <img
+                                        src={song.album_art}
+                                        alt={song.name}
+                                        className="w-8 h-8 object-cover rounded-sm border transform rotate-[-17deg]"
+                                    />
+                                )}
+                                <HoverCard>
+                                    <HoverCardTrigger>
+                                        <span className="cursor-pointer">
+                                            <TextEffect per="char" preset="fade" speedReveal={0.5} speedSegment={0.3}>
+                                                {line}
+                                            </TextEffect>
+                                        </span>
+                                    </HoverCardTrigger>
+                                    <HoverCardContent>
+                                        {song && song.name}
+                                    </HoverCardContent>
+                                </HoverCard>
                             </span>
-                        </HoverCardTrigger>
-                        <HoverCardContent>
-                            {song && song.name}
-                        </HoverCardContent>
-                    </HoverCard>
-                </span>
-            );
-            
+                        );
+                    }
+                    // Add line break after each line except the last
+                    if (lineIdx < highlightLines.length - 1) {
+                        parts.push(<br key={`${index}-${matchIndex}-br-${lineIdx}`} />);
+                    }
+                });
+            }
+
             lastIndex = matchStart + match[0].length;
         });
-        
-        // Add any remaining text after the last match, plus period
+
+        // Add any remaining text after the last match
         if (lastIndex < modifiedText.length) {
-            parts.push(modifiedText.slice(lastIndex));
-        } else {
-            parts.push('. ');
+            const textAfter = modifiedText.slice(lastIndex);
+            renderTextWithNewlines(textAfter, parts, `after-${index}`);
         }
+
+        // Add space after sentence
+        parts.push(<React.Fragment key={`${index}-space`}> </React.Fragment>);
 
         return (
             <span key={index} className="inline">
@@ -168,22 +239,30 @@ const FormattedMessage = () => {
         );
     };
 
-    const isWaitingForBot = lastBotMessage === undefined || 
-                            lastBotMessage.message === '' || 
-                            lastBotMessage.message === null ||
-                            (Array.isArray(lastBotMessage.message) && lastBotMessage.message.length === 0);
+    const isWaitingForBot = lastBotMessage === undefined ||
+        lastBotMessage.message === '' ||
+        lastBotMessage.message === null ||
+        (Array.isArray(lastBotMessage.message) && lastBotMessage.message.length === 0);
+
+    const hasMessages = messages.length > 0;
 
     return (
-        <div className="flex flex-1 h-full pt-2 pb-2 pl-8 pr-8 md:pl-16 md:pr-16 lg:pl-28 lg:pr-28">
-            {isWaitingForBot ? (
+        <div className="flex flex-1 h-full pt-2 pb-2 pl-2 pr-2 md:pl-8 md:pr-8 lg:pl-8 lg:pr-8">
+            {!hasMessages ? (
+                <div className="flex items-center justify-center flex-1">
+                    <p>Your text will appear here</p>
+                </div>
+            ) : isWaitingForBot ? (
                 <div className="items-center justify-center flex flex-1">
                     <Loader />
                 </div>
             ) : (
-                <div className="text-base leading-relaxed">
-                    {Array.isArray(messageData) && messageData.map((item, index) => 
-                        renderSentence(item, index)
-                    )}
+                <div className="flex flex-col gap-4">
+                    <div className="text-base leading-loose">
+                        {Array.isArray(messageData) && messageData.map((item, index) =>
+                            renderSentence(item, index)
+                        )}
+                    </div>
                 </div>
             )}
         </div>
