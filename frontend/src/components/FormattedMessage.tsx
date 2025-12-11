@@ -96,7 +96,7 @@ const FormattedMessage = () => {
                 parts.push(
                     <span
                         key={`${keyPrefix}-line-${lineIndex}`}
-                        className="items-center gap-1 px-1 text-gray-800 font-medium align-middle"
+                        className="items-center gap-1 px-1 text-gray-50 text-opacity-75 font-normal align-middle"
                     >
                         {line}
                     </span>
