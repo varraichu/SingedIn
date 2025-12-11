@@ -66,23 +66,6 @@ const CopyText = () => {
 
                 </div>)
             }
-
-                {/* <button
-                    onClick={handleCopy}
-                    disabled={!hasMessages}
-                    className={`self-end flex items-center gap-2 px-4 py-2 rounded-lg transition-colors 
-      ${hasMessages
-                            ? 'text-primary hover:text-chart-3 opacity-100 cursor-pointer'
-                            : 'text-gray-400 opacity-60 cursor-default'}
-                    `}
-                    aria-label="Copy text"
-                >
-                    {copied ? (
-                        <Check className="w-4 h-4" />
-                    ) : (
-                        <Copy className="w-4 h-4" />
-                    )}
-                </button> */}
         </div>
 
     )

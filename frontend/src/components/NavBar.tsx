@@ -30,16 +30,12 @@ export default function NavBar() {
 
   const [loggedIn, setLoggedIn] = useState(false)
   const [userData, setUserData] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
-  // if (url.match(/\babout\b/g)) {
-  //   navigationLinks[1].active = true
-  //   navigationLinks[0].active = false
-  // }
 
 
   useEffect(() => {
-    // checkAuthStatus()
+    checkAuthStatus()
   }, [])
 
 
@@ -92,11 +88,21 @@ export default function NavBar() {
     window.location.href = "http://127.0.0.1:8000/api/login"
   }
 
-  const handleUserDataClick = () => {
-    // if (userData) {
-    //   console.log("Current user data:", userData)
-    //   alert(JSON.stringify(userData, null, 2))
-    // }
+  const handleUserDataClick = async () => {
+    if (userData) {
+      console.log("Current user data:", userData)
+      alert(JSON.stringify(userData, null, 2))
+    }
+    else{
+      setLoading(true);
+      try{
+        const data = await fetchUserData();
+        console.log("heheh")
+      }
+      catch(error){
+
+      }
+    }
   }
 
   return (
@@ -163,7 +169,7 @@ export default function NavBar() {
               <MicVocal />
             </div>
             {/* Navigation menu */}
-            <NavigationMenu className="max-md:hidden">
+            {/* <NavigationMenu className="max-md:hidden">
               <NavigationMenuList className="gap-2">
                 {navigationLinks.map((link, index) => (
                   <NavigationMenuItem key={index}>
@@ -177,10 +183,9 @@ export default function NavBar() {
                   </NavigationMenuItem>
                 ))}
               </NavigationMenuList>
-            </NavigationMenu>
+            </NavigationMenu> */}
           </div>
         </div>
-        {/* Right side */}
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm" className="text-sm">
             <a href="https://www.linkedin.com/in/qasim-anwar/" target="_blank">Show love</a>
@@ -191,7 +196,7 @@ export default function NavBar() {
             onClick={loggedIn ? handleUserDataClick : handleLogin}
             disabled={loading}
           >
-            {loading ? "Loading..." : loggedIn ? userData?.username : "Connect Spotify"}
+            {loading ? "Loading..." : (loggedIn && !userData) ? "Fetch Data" : (loggedIn && userData)? userData?.username : "Connect Spotify"}
           </Button>
         </div>
       </div>

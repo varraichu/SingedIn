@@ -31,7 +31,7 @@ const FormattedMessage = () => {
 
     useEffect(() => {
         console.log("bot message: ", messageData)
-        async function loadColors() {
+        const loadColors = async () => {
             const newColors: Record<string, string> = {};
 
             // Check if messageData is an array
@@ -77,7 +77,7 @@ const FormattedMessage = () => {
         loadColors();
     }, [messageData]);
 
-    function getBeautifulContrast(hex: string): string {
+    const getBeautifulContrast = (hex: string): string => {
         const color = tinycolor(hex);
         const isDark = color.isDark();
 
@@ -180,7 +180,7 @@ const FormattedMessage = () => {
                 );
             } else {
                 // Highlighted text contains newlines - render each line separately
-                highlightLines.forEach((line, lineIdx) => {
+                highlightLines.forEach((line:string, lineIdx:number) => {
                     if (line) {
                         parts.push(
                             <span
