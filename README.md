@@ -48,26 +48,29 @@ Frontend was built using React. I used shadcn and ai libraries to make the UI si
 
 Navigate to the backend directory:
 
-```powershell
+```
 cd "fast-backend"
 ```
 
 #### Create and activate the virtual environment:
 
-```uv venv
+```
+uv venv
 & ".venv/Scripts/Activate.ps1"
 ```
 
 #### Install dependencies:
 
-```uv sync
+```
+uv sync
 ```
 
 #### Running the Backend
 
 Once the virtual environment is activated, start the FastAPI development server:
 
-```uv run fastapi dev main.py
+```
+uv run fastapi dev main.py
 ```
 
 The backend will start in development mode and be available at the default FastAPI address.
@@ -78,20 +81,22 @@ The backend will start in development mode and be available at the default FastA
 
 Navigate to the frontend directory:
 
-```powershell
+```
 cd "frontend"
 ```
 
 #### Install packages:
 
-```npm i
+```
+npm i
 ```
 
 #### Running the Backend
 
 Start the frontend:
 
-```npm run dev
+```
+npm run dev
 ```
 
 > The frontend will show that it is exposed on http://localhost:5173/ or http://10.0.0.106:5173/ but you will need to access it at http://127.0.0.1:5173/
