@@ -210,21 +210,20 @@ async def get_all_liked_songs(access_token: str = Cookie(None)):
 
 @app.get('/api/get_lyrics')
 async def getLyrics(request: Request):
-    
-    
-    # fetchLyricsForSongs()
-    
-    vector_store = request.state.vector_store
-    
-    addDataToVectorStore(vector_store=vector_store)
-    return {"message" : "lyrics fetched"}
-
+    try:
+        fetchLyricsForSongs()
+        vector_store = request.state.vector_store
+        addDataToVectorStore(vector_store=vector_store)
+        return {"message" : "lyrics fetched"}
+    except Exception as e:
+        return {'error: ', str(e)}
 
 @app.post("/api/chat")
 async def chat(conversation:Conversation, request: Request):
-    print(conversation.temperature)
-    print(conversation.similarity)
     vector_store = request.state.vector_store
-    ai_chatbot = ChatBot(vector_store=vector_store)
+    ai_chatbot = ChatBot(
+        vector_store=vector_store,
+        temperature=conversation.temperature,
+        similarity=conversation.similarity)
     response = ai_chatbot.enhanceText(userMessage=conversation.message)
     return {"message": response["final_sentences"], "statistics":response["statistics"]}

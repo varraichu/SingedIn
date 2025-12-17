@@ -2,9 +2,12 @@ import os
 
 from langchain_community.callbacks import get_openai_callback
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.retrievers.multi_query import MultiQueryRetriever
-from langchain.globals import set_debug, set_verbose
+from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_classic.retrievers import MultiQueryRetriever
+# from langchain.globals import set_debug, set_verbose
 
 
 from nltk.tokenize import sent_tokenize
@@ -18,10 +21,11 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 class ChatBot:
-    def __init__(self, vector_store):
+    def __init__(self, vector_store, temperature: float = 0.3, similarity: float =0.9):
+        
         self.llm = ChatOpenAI(
             model="gpt-4o-mini",
-            temperature=0.3
+            temperature=temperature
         )
 
         #multi-query retriever
@@ -30,7 +34,7 @@ class ChatBot:
                 search_type='mmr',
                 search_kwargs={
                     "k": 20,
-                "score_threshold": 0.9,
+                "score_threshold": similarity,
                 "lambda_mult": 0.75,
                 }
             ), llm=self.llm
@@ -232,8 +236,18 @@ Another example:
                     statistics["completion_tokens"] += cb.completion_tokens
                     statistics["total_cost"] += cb.total_cost
                     statistics["total_llm_calls"] += 1
+
                 except Exception as e:
-                    return {"error": str(e)}
+                    # return {"error": str(e)}
+                    print(f"Error processing sentence {i}: {str(e)}")
+                    # Fallback to original sentence
+                    formatted_output = {
+                        'original_sentence': sentence, 
+                        'lyrics': lyrics_text, 
+                        'modified_sentence': sentence, 
+                        'song_name': ''
+                    }
+                    final_sentences.append(formatted_output)
         
         # Step 4: Add newlines at paragraph boundaries
         for boundary in paragraph_boundaries:
@@ -243,4 +257,4 @@ Another example:
         print(f"\nTotal sentences: {statistics['total_sentences']}")
         print(f"Total Cost (USD): ${statistics['total_cost']}")
         
-        return {"final_sentences": final_sentences, "statistics": statistics}
+        return {"final_sentences": final_sentences or [], "statistics": statistics}
